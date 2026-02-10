@@ -134,8 +134,32 @@ func ProcessInventoryUpdate(data map[string]model.LuaReport) {
 
 	now := time.Now()
 
+	updateSystemEnergy(now, data, s)
+	updateFactories(now, data, s)
+
+	BroadcastToWeb()
+}
+
+func updateSystemEnergy(now time.Time, data map[string]model.LuaReport, s *store.StateManager) {
+	for _, report := range data {
+		if report.Energy == nil {
+			break
+		}
+		if report.Energy.EnergyMax > 0 {
+			s.SystemStatus.EnergyStored = report.Energy.EnergyStored
+			s.SystemStatus.EnergyMax = report.Energy.EnergyMax
+			s.SystemStatus.EnergyUsage = report.Energy.EnergyUsage
+			s.SystemStatus.AverageEnergyInput = report.Energy.AverageEnergyInput
+			s.SystemStatus.NetEnergyRate = report.Energy.AverageEnergyInput - report.Energy.EnergyUsage
+			s.SystemStatus.LastUpdated = now.Unix()
+		}
+		break
+	}
+}
+
+func updateFactories(now time.Time, data map[string]model.LuaReport, s *store.StateManager) {
 	// 汇总所有来源的库存到临时大仓库
-	var globalInventory = make(map[string]int64)
+	globalInventory := make(map[string]int64)
 	for _, report := range data {
 		for item, count := range report.RawItems {
 			globalInventory[item] += count
@@ -145,14 +169,12 @@ func ProcessInventoryUpdate(data map[string]model.LuaReport) {
 	// 根据配置表，主动为每个工厂分配库存
 	for factoryID, conf := range config.FactoryRegistry {
 		var factoryTotalInv float64 = 0
-		
 		for itemID, rate := range conf.Rates {
 			if count, exists := globalInventory[itemID]; exists {
 				factoryTotalInv += float64(count) * rate
 			}
 		}
 
-		// 3. 更新工厂状态
 		factory, exists := s.Factories[factoryID]
 		if !exists {
 			factory = &model.FactoryData{ID: factoryID, IsActive: true}
@@ -162,10 +184,8 @@ func ProcessInventoryUpdate(data map[string]model.LuaReport) {
 		factory.Name = conf.Name
 		factory.ItemId = conf.Icon
 		factory.Count = int64(factoryTotalInv)
-		factory.LastUpdated = now.Unix() 
+		factory.LastUpdated = now.Unix()
 	}
-
-	BroadcastToWeb()
 }
 
 func BroadcastToWeb() {
@@ -178,6 +198,7 @@ func BroadcastToWeb() {
 	payload := gin.H{
 		"type":   "update",
 		"data":   list,
+		"system": s.SystemStatus,
 	}
 
 	for client := range s.WebClients {

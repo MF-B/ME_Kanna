@@ -9,6 +9,25 @@ local util = require("util")
 
 local ae_device = nil
 
+local function collectEnergy(bridge)
+    return {
+        energyStored = bridge.getStoredEnergy() or 0,
+        energyMax = bridge.getEnergyCapacity() or 0,
+        energyUsage = bridge.getEnergyUsage() or 0,
+        averageEnergyInput = bridge.getAverageEnergyInput() or 0
+    }
+end
+
+local function buildInventoryPayload(filtered_items, energy)
+    return packets.inventoryUpdate(
+        config.DEVICE_ID,
+        "Main Storage",
+        true,
+        filtered_items,
+        energy
+    )
+end
+
 local function sendLoop(ws)
     while true do
         ae_device = aeBridge.ensureBridge(ae_device)
@@ -19,7 +38,8 @@ local function sendLoop(ws)
             end
 
             local filtered_items = aeBridge.collectFilteredItems(ae_device, whitelist.isMonitored)
-            local payload = packets.inventoryUpdate(config.DEVICE_ID, "Main Storage", true, filtered_items)
+            local energy = collectEnergy(ae_device)
+            local payload = buildInventoryPayload(filtered_items, energy)
             util.sendJson(ws, payload)
         end
 

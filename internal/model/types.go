@@ -1,10 +1,18 @@
 package model
 
+type EnergyStats struct {
+	EnergyStored       float64 `json:"energyStored"`
+	EnergyMax          float64 `json:"energyMax"`
+	EnergyUsage        float64 `json:"energyUsage"`
+	AverageEnergyInput float64 `json:"averageEnergyInput"`
+}
+
 // LuaReport 对应 AE2 发上来的库存快照
 type LuaReport struct {
 	RawItems map[string]int64 `json:"raw_items"`
 	IsActive bool             `json:"isActive"`
 	Name     string           `json:"name"`
+	Energy   *EnergyStats     `json:"energy,omitempty"`
 }
 
 // FactoryData 发给 Vue 前端的最终数据
