@@ -1,11 +1,12 @@
--- ================= 配置区域 =================
-local WS_URL = "ws://192.168.1.34:8080/ws/minecraft" 
-local FACTORY_ID = "iron_farm"
-local SIDE_REDSTONE = "top"
--- ===========================================
+package.path = "lib/?.lua;" .. package.path
+
+local config = require("config")
+local wsClient = require("ws_client")
+local packets = require("packets")
+local util = require("util")
 
 local function mainLoop(ws)
-    print("Turtle Online: " .. FACTORY_ID)
+    print("Turtle Online: " .. config.FACTORY_ID)
     
     while true do
         -- 并行处理：既要发数据，又要收指令
@@ -16,13 +17,8 @@ local function mainLoop(ws)
                     local event, side = os.pullEvent("turtle_inventory")
                     local item = turtle.getItemDetail(1)
                     if item then
-                        local payload = {
-                            type = "production_flow",
-                            id = FACTORY_ID, -- 这个 ID 很重要，后端靠它认人
-                            delta = item.count,
-                            item = item.name
-                        }
-                        ws.send(textutils.serializeJSON(payload))
+                        local payload = packets.productionFlow(config.FACTORY_ID, item.count, item.name)
+                        util.sendJson(ws, payload)
                         while not turtle.dropDown() do sleep(2) end
                     end
                 end
@@ -38,10 +34,10 @@ local function mainLoop(ws)
                         if cmd and cmd.action then
                             print("CMD: " .. cmd.action)
                             if cmd.action == "stop" then
-                                rs.setOutput(SIDE_REDSTONE, true)
+                                rs.setOutput(config.SIDE_REDSTONE, true)
                                 print("-> STOPPED")
                             elseif cmd.action == "start" then
-                                rs.setOutput(SIDE_REDSTONE, false)
+                                rs.setOutput(config.SIDE_REDSTONE, false)
                                 print("-> STARTED")
                             end
                         end
@@ -55,17 +51,4 @@ local function mainLoop(ws)
     end
 end
 
-while true do
-    term.clear()
-    term.setCursorPos(1,1)
-    print("Connecting...")
-    local ws, err = http.websocket(WS_URL)
-    if ws then
-        pcall(mainLoop, ws)
-        ws.close()
-    else
-        print("Error: " .. tostring(err))
-    end
-    print("Reconnecting in 5s...")
-    sleep(5)
-end
+wsClient.run(config.WS_URL, mainLoop, config.RECONNECT_DELAY)

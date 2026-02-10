@@ -1,36 +1,58 @@
 -- ================= 配置 =================
 local HOST = "http://192.168.1.34:8080" -- 你的 Go 后端地址
-local SCRIPT_NAME = "main.lua"
-local UPDATE_URL = HOST .. "/lua/" .. SCRIPT_NAME
+local FILES = {
+    "main.lua",
+    "lib/config.lua",
+    "lib/util.lua",
+    "lib/ws_client.lua",
+    "lib/whitelist.lua",
+    "lib/ae_bridge.lua",
+    "lib/packets.lua"
+}
 -- =======================================
 
 term.clear()
 term.setCursorPos(1,1)
 print("=== MineCCT Bootloader ===")
 
-local function updateCode()
-    print("Checking for updates...")
-    
-    local response = http.get(UPDATE_URL)
-    
-    if response then
-        local content = response.readAll()
-        response.close()
-        
-        -- 2. 保存为文件
-        local file = fs.open(SCRIPT_NAME, "w")
-        file.write(content)
-        file.close()
-        
-        print("Update Success: " .. SCRIPT_NAME)
-        return true
-    else
-        print("Update Failed! (Server offline?)")
-        return false
+local function ensureDirs(path)
+    local dir = fs.getDir(path)
+    if dir ~= "" and not fs.exists(dir) then
+        fs.makeDir(dir)
     end
 end
 
-if fs.exists(SCRIPT_NAME) then
+local function fetchFile(path)
+    local updateUrl = HOST .. "/lua/" .. path
+    local response = http.get(updateUrl)
+    if not response then
+        print("Update Failed: " .. path .. " (Server offline?)")
+        return false
+    end
+
+    local content = response.readAll()
+    response.close()
+
+    ensureDirs(path)
+    local file = fs.open(path, "w")
+    file.write(content)
+    file.close()
+
+    print("Update Success: " .. path)
+    return true
+end
+
+local function updateCode()
+    print("Checking for updates...")
+    for _, path in ipairs(FILES) do
+        if not fetchFile(path) then
+            return false
+        end
+    end
+    return true
+end
+
+if fs.exists("main.lua") then
     updateCode()
 else
     while not updateCode() do
@@ -40,11 +62,11 @@ else
 end
 
 -- 4. 运行主程序
-print("Launching " .. SCRIPT_NAME .. "...")
+print("Launching main.lua...")
 sleep(1)
 
 local ok, err = pcall(function()
-    shell.run(SCRIPT_NAME)
+    shell.run("main.lua")
 end)
 
 if not ok then
