@@ -22,6 +22,7 @@ type SystemStats struct {
 	AverageEnergyInput float64 `json:"averageEnergyInput"`
 	NetEnergyRate      float64 `json:"netEnergyRate"`
 	LastUpdated        int64   `json:"lastUpdated"`
+	Storage            model.StorageStats `json:"storage"`
 }
 
 // Global 全局单例

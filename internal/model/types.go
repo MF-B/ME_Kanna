@@ -7,12 +7,34 @@ type EnergyStats struct {
 	AverageEnergyInput float64 `json:"averageEnergyInput"`
 }
 
+type StorageStats struct {
+	ItemTotal             int64 `json:"itemTotal"`
+	ItemUsed              int64 `json:"itemUsed"`
+	ItemAvailable         int64 `json:"itemAvailable"`
+	ItemExternalTotal     int64 `json:"itemExternalTotal"`
+	ItemExternalUsed      int64 `json:"itemExternalUsed"`
+	ItemExternalAvailable int64 `json:"itemExternalAvailable"`
+	FluidTotal            int64 `json:"fluidTotal"`
+	FluidUsed             int64 `json:"fluidUsed"`
+	FluidAvailable        int64 `json:"fluidAvailable"`
+	FluidExternalTotal    int64 `json:"fluidExternalTotal"`
+	FluidExternalUsed     int64 `json:"fluidExternalUsed"`
+	FluidExternalAvailable int64 `json:"fluidExternalAvailable"`
+	ChemicalTotal         int64 `json:"chemicalTotal"`
+	ChemicalUsed          int64 `json:"chemicalUsed"`
+	ChemicalAvailable     int64 `json:"chemicalAvailable"`
+	ChemicalExternalTotal int64 `json:"chemicalExternalTotal"`
+	ChemicalExternalUsed  int64 `json:"chemicalExternalUsed"`
+	ChemicalExternalAvailable int64 `json:"chemicalExternalAvailable"`
+}
+
 // LuaReport 对应 AE2 发上来的库存快照
 type LuaReport struct {
 	RawItems map[string]int64 `json:"raw_items"`
 	IsActive bool             `json:"isActive"`
 	Name     string           `json:"name"`
 	Energy   *EnergyStats     `json:"energy,omitempty"`
+	Storage  *StorageStats    `json:"storage,omitempty"`
 }
 
 // FactoryData 发给 Vue 前端的最终数据

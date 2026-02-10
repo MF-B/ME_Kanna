@@ -24,10 +24,10 @@
         <el-tabs v-model="activeTab" class="dashboard-tabs">
           <el-tab-pane label="监控面板" name="monitor">
             <section class="panel-section">
-              <div class="panel-title">AE2 能源监控</div>
+              <div class="panel-title">AE2 监控面板</div>
 
               <el-row :gutter="20">
-                <el-col :xs="24" :md="16" :lg="12">
+                <el-col :xs="24" :md="12" :lg="10">
                   <el-card class="energy-card" shadow="hover">
                     <div class="energy-header">
                       <div class="energy-title">能量储备</div>
@@ -64,6 +64,67 @@
                       <div class="energy-stat">
                         <div class="label">净变化</div>
                         <div class="value" :class="netRateClass">{{ formatRate(systemStatus.netEnergyRate, true) }}</div>
+                      </div>
+                    </div>
+                  </el-card>
+                </el-col>
+
+                <el-col :xs="24" :md="12" :lg="14">
+                  <el-card class="storage-card" shadow="hover">
+                    <div class="energy-header">
+                      <div class="energy-title">库存总览</div>
+                      <el-tag size="small" effect="dark" :type="storagePercent < 80 ? 'success' : 'warning'">
+                        {{ storagePercent.toFixed(1) }}%
+                      </el-tag>
+                    </div>
+
+                    <div class="storage-split" role="img" aria-label="内部与外部存储容量占比">
+                      <div class="storage-segment internal" :style="{ width: `${storageInternalRatio}%` }">
+                        <div class="storage-fill" :style="{ width: `${storageInternalUsage}%` }"></div>
+                      </div>
+                      <div class="storage-segment external" :style="{ width: `${storageExternalRatio}%` }">
+                        <div class="storage-fill" :style="{ width: `${storageExternalUsage}%` }"></div>
+                      </div>
+                    </div>
+
+                    <div class="storage-legend">
+                      <div class="legend-item">
+                        <span class="legend-swatch internal"></span>
+                        内部 {{ formatCompact(systemStatus.storage.itemTotal) }}
+                      </div>
+                      <div class="legend-item">
+                        <span class="legend-swatch external"></span>
+                        外部 {{ formatCompact(systemStatus.storage.itemExternalTotal) }}
+                      </div>
+                    </div>
+
+                    <div class="energy-meta">
+                      <div class="energy-value">
+                        {{ formatCompact(storageTotalUsed) }} / {{ formatCompact(storageTotalCapacity) }} 物品存储
+                      </div>
+                      <div class="energy-updated" v-if="systemStatus.lastUpdated">
+                        更新: {{ formatTime(systemStatus.lastUpdated) }}
+                      </div>
+                    </div>
+
+                    <div class="storage-grid">
+                      <div class="storage-block">
+                        <div class="block-title">物品存储</div>
+                        <div class="block-row">已用 {{ formatCompact(systemStatus.storage.itemUsed) }} / 总计 {{ formatCompact(systemStatus.storage.itemTotal) }}</div>
+                        <div class="block-row muted">外部 {{ formatCompact(systemStatus.storage.itemExternalUsed) }} / {{ formatCompact(systemStatus.storage.itemExternalTotal) }}</div>
+                        <div class="block-row muted">可用 内部 {{ formatCompact(systemStatus.storage.itemAvailable) }} / 外部 {{ formatCompact(systemStatus.storage.itemExternalAvailable) }}</div>
+                      </div>
+                      <div class="storage-block">
+                        <div class="block-title">流体存储</div>
+                        <div class="block-row">已用 {{ formatCompact(systemStatus.storage.fluidUsed) }} / 总计 {{ formatCompact(systemStatus.storage.fluidTotal) }}</div>
+                        <div class="block-row muted">外部 {{ formatCompact(systemStatus.storage.fluidExternalUsed) }} / {{ formatCompact(systemStatus.storage.fluidExternalTotal) }}</div>
+                        <div class="block-row muted">可用 内部 {{ formatCompact(systemStatus.storage.fluidAvailable) }} / 外部 {{ formatCompact(systemStatus.storage.fluidExternalAvailable) }}</div>
+                      </div>
+                      <div class="storage-block">
+                        <div class="block-title">化学存储</div>
+                        <div class="block-row">已用 {{ formatCompact(systemStatus.storage.chemicalUsed) }} / 总计 {{ formatCompact(systemStatus.storage.chemicalTotal) }}</div>
+                        <div class="block-row muted">外部 {{ formatCompact(systemStatus.storage.chemicalExternalUsed) }} / {{ formatCompact(systemStatus.storage.chemicalExternalTotal) }}</div>
+                        <div class="block-row muted">可用 内部 {{ formatCompact(systemStatus.storage.chemicalAvailable) }} / 外部 {{ formatCompact(systemStatus.storage.chemicalExternalAvailable) }}</div>
                       </div>
                     </div>
                   </el-card>
@@ -126,7 +187,27 @@ const systemStatus = ref({
   energyUsage: 0,
   averageEnergyInput: 0,
   netEnergyRate: 0,
-  lastUpdated: 0
+  lastUpdated: 0,
+  storage: {
+    itemTotal: 0,
+    itemUsed: 0,
+    itemAvailable: 0,
+    itemExternalTotal: 0,
+    itemExternalUsed: 0,
+    itemExternalAvailable: 0,
+    fluidTotal: 0,
+    fluidUsed: 0,
+    fluidAvailable: 0,
+    fluidExternalTotal: 0,
+    fluidExternalUsed: 0,
+    fluidExternalAvailable: 0,
+    chemicalTotal: 0,
+    chemicalUsed: 0,
+    chemicalAvailable: 0,
+    chemicalExternalTotal: 0,
+    chemicalExternalUsed: 0,
+    chemicalExternalAvailable: 0
+  }
 })
 
 let socket = null
@@ -188,6 +269,42 @@ const energyPercent = computed(() => {
 })
 
 const energyColor = computed(() => energyPercent.value < 20 ? '#f56c6c' : '#3dd6a5')
+
+const storagePercent = computed(() => {
+  if (!storageTotalCapacity.value) return 0
+  const p = (storageTotalUsed.value / storageTotalCapacity.value) * 100
+  return Math.min(Math.max(p, 0), 100)
+})
+
+const storageColor = computed(() => storagePercent.value > 90 ? '#ff6b6b' : '#5d8aff')
+
+const storageTotalCapacity = computed(() => {
+  return (systemStatus.value.storage.itemTotal || 0) + (systemStatus.value.storage.itemExternalTotal || 0)
+})
+
+const storageTotalUsed = computed(() => {
+  return (systemStatus.value.storage.itemUsed || 0) + (systemStatus.value.storage.itemExternalUsed || 0)
+})
+
+const storageInternalRatio = computed(() => {
+  if (!storageTotalCapacity.value) return 50
+  return (systemStatus.value.storage.itemTotal / storageTotalCapacity.value) * 100
+})
+
+const storageExternalRatio = computed(() => {
+  if (!storageTotalCapacity.value) return 50
+  return (systemStatus.value.storage.itemExternalTotal / storageTotalCapacity.value) * 100
+})
+
+const storageInternalUsage = computed(() => {
+  if (!systemStatus.value.storage.itemTotal) return 0
+  return Math.min((systemStatus.value.storage.itemUsed / systemStatus.value.storage.itemTotal) * 100, 100)
+})
+
+const storageExternalUsage = computed(() => {
+  if (!systemStatus.value.storage.itemExternalTotal) return 0
+  return Math.min((systemStatus.value.storage.itemExternalUsed / systemStatus.value.storage.itemExternalTotal) * 100, 100)
+})
 
 const netRateClass = computed(() => {
   if (systemStatus.value.netEnergyRate > 0) return 'text-green'
@@ -301,12 +418,17 @@ h1 {
   font-weight: 800;
 }
 
-.energy-card {
+.energy-card,
+.storage-card {
   background: rgba(18, 20, 26, 0.92);
   border: 1px solid rgba(61, 214, 165, 0.25);
   color: #e5eaf3;
   border-radius: 14px;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+
+.storage-card {
+  border-color: rgba(93, 138, 255, 0.3);
 }
 
 .energy-header {
@@ -379,6 +501,100 @@ h1 {
 
 .text-gray {
   color: #7c869e;
+}
+
+.storage-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.storage-split {
+  display: flex;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(93, 138, 255, 0.2);
+  margin-bottom: 10px;
+}
+
+.storage-segment {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.storage-segment.internal {
+  background: rgba(61, 214, 165, 0.25);
+}
+
+.storage-segment.external {
+  background: rgba(93, 138, 255, 0.25);
+}
+
+.storage-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(61, 214, 165, 0.95), rgba(61, 214, 165, 0.65));
+}
+
+.storage-segment.external .storage-fill {
+  background: linear-gradient(90deg, rgba(93, 138, 255, 0.95), rgba(93, 138, 255, 0.65));
+}
+
+.storage-legend {
+  display: flex;
+  gap: 16px;
+  font-size: 0.8rem;
+  color: #aab2c8;
+  margin-bottom: 6px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.legend-swatch.internal {
+  background: #3dd6a5;
+}
+
+.legend-swatch.external {
+  background: #5d8aff;
+}
+
+.storage-block {
+  background: rgba(15, 17, 22, 0.6);
+  border: 1px solid rgba(93, 138, 255, 0.2);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.storage-block .block-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #9aa3c4;
+  margin-bottom: 8px;
+}
+
+.storage-block .block-row {
+  font-size: 0.9rem;
+  color: #eef2ff;
+  margin-bottom: 6px;
+}
+
+.storage-block .block-row.muted {
+  color: #7e88a7;
 }
 
 /* 状态灯样式 */

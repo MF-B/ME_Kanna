@@ -135,6 +135,7 @@ func ProcessInventoryUpdate(data map[string]model.LuaReport) {
 	now := time.Now()
 
 	updateSystemEnergy(now, data, s)
+	updateSystemStorage(now, data, s)
 	updateFactories(now, data, s)
 
 	BroadcastToWeb()
@@ -153,6 +154,18 @@ func updateSystemEnergy(now time.Time, data map[string]model.LuaReport, s *store
 			s.SystemStatus.NetEnergyRate = report.Energy.AverageEnergyInput - report.Energy.EnergyUsage
 			s.SystemStatus.LastUpdated = now.Unix()
 		}
+		break
+	}
+}
+
+func updateSystemStorage(now time.Time, data map[string]model.LuaReport, s *store.StateManager) {
+	for _, report := range data {
+		if report.Storage == nil {
+			break
+		}
+
+		s.SystemStatus.Storage = *report.Storage
+		s.SystemStatus.LastUpdated = now.Unix()
 		break
 	}
 }

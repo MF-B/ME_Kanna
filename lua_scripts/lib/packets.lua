@@ -1,6 +1,6 @@
 local M = {}
 
-function M.inventoryUpdate(deviceId, name, isActive, rawItems, energy)
+function M.inventoryUpdate(deviceId, name, isActive, rawItems, energy, storage)
     local report = {
         name = name,
         isActive = isActive,
@@ -14,6 +14,10 @@ function M.inventoryUpdate(deviceId, name, isActive, rawItems, energy)
             energyUsage = energy.energyUsage,
             averageEnergyInput = energy.averageEnergyInput
         }
+    end
+
+    if storage then
+        report.storage = storage
     end
 
     return {
