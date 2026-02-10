@@ -1,0 +1,61 @@
+# me_bridge包含的方法
+## 基本函数
+isOnline
+isConnected
+getItem
+getFluid
+getChemical
+getItems
+getFluids
+getChemicals
+getCraftableItems
+getCraftableFluids
+getCells
+getConfiguration
+getName
+getDrives
+
+## 输入/输出函数
+importItem
+exportItem
+importFluid
+exportFluid
+importChemical
+exportChemical
+
+# 能量相关函数
+getStoredEnergy
+getEnergyCapacity
+getEnergyUsage
+getAverageEnergyInput
+
+# 存储相关函数
+getTotalExternalItemStorage
+getTotalExternalFluidStorage
+getTotalExternalChemicalStorage
+getTotalItemStorage
+getTotalFluidStorage
+getTotalChemicalStorage
+getUsedExternalItemStorage
+getUsedExternalFluidStorage
+getUsedExternalChemicalStorage
+getUsedItemStorage
+getUsedFluidStorage
+getUsedChemicalStorage
+getAvailableExternalItemStorage
+getAvailableExternalFluidStorage
+getAvailableExternalChemicalStorage
+getAvailableItemStorage
+getAvailableFluidStorage 
+getAvailableChemicalStorage
+
+# 合成相关函数
+craftItem
+craftFluid
+getCraftingTask
+getCraftingTasks
+getCraftingCPUs
+cancelCraftingTasks
+getPatterns
+isCraftable
+isCrafting
