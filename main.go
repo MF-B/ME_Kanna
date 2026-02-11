@@ -3,12 +3,16 @@ package main
 import (
 	"log"
 	"mineCCT/internal/api" // 引入 api 包
+	"mineCCT/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	r := gin.Default()
+
+	// 启动后台任务 (清理长期无响应工厂的产率)
+	service.StartBackgroundTasks()
 
 	// 注册路由 - 全部委托给 api 包处理
 	r.GET("/ws/minecraft", api.HandleMinecraft)
