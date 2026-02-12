@@ -4,6 +4,7 @@ import (
 	"mineCCT/internal/config"
 	"mineCCT/internal/model"
 	"mineCCT/internal/store"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -18,8 +19,8 @@ type WindowEntry struct {
 	Duration float64
 }
 
-var factoryWindows = make(map[string][]WindowEntry)
-var lastPacketTimes = make(map[string]time.Time)
+var factoryWindows = make(map[string]map[string][]WindowEntry)
+var lastPacketTimes = make(map[string]map[string]time.Time)
 const WindowSize = 5
 
 // ========================================================
@@ -45,16 +46,27 @@ func checkStaleFactories() {
 	hasUpdate := false
 
 	for id, factory := range s.Factories {
-		lastTime, ok := lastPacketTimes[id]
+		itemTimes, ok := lastPacketTimes[id]
 		if !ok { continue }
-		
-		// 超过 3 分钟没收到海龟数据，速率归零
-		if now.Sub(lastTime).Minutes() > 3 {
-			if factory.ProdRate > 0 {
-				factory.ProdRate = 0
-				hasUpdate = true
-				delete(factoryWindows, id)
+
+		for itemID, lastTime := range itemTimes {
+			// 超过 3 分钟没收到海龟数据，速率归零
+			if now.Sub(lastTime).Minutes() > 3 {
+				if factory.Items != nil {
+					if item, exists := factory.Items[itemID]; exists && item.ProdRate > 0 {
+						item.ProdRate = 0
+						hasUpdate = true
+					}
+				}
+				if factoryWindows[id] != nil {
+					delete(factoryWindows[id], itemID)
+				}
+				delete(itemTimes, itemID)
 			}
+		}
+
+		if len(itemTimes) == 0 {
+			delete(lastPacketTimes, id)
 		}
 	}
 	if hasUpdate {
@@ -66,12 +78,64 @@ func checkStaleFactories() {
 // 核心处理逻辑
 // ========================================================
 
-func getItemMultiplier(factoryID string, itemID string) float64 {
-	conf, ok := config.FactoryRegistry[factoryID]
-	if !ok { return 1.0 }
-	rate, found := conf.Rates[itemID]
-	if !found { return 0 }
-	return rate
+func applyFactoryOverrides(factoryID string, factory *model.FactoryData) {
+	if factory == nil {
+		return
+	}
+	if conf, ok := config.FactoryRegistry[factoryID]; ok {
+		if conf.Name != "" && !factory.NameLocked {
+			factory.Name = conf.Name
+		}
+		if conf.PrimaryItem != "" {
+			factory.PrimaryItem = conf.PrimaryItem
+		}
+		if conf.Icon != "" {
+			factory.ItemId = conf.Icon
+		}
+	}
+	if factory.Name == "" {
+		factory.Name = factoryID
+	}
+	if factory.PrimaryItem == "" {
+		factory.PrimaryItem = factory.ItemId
+	}
+	if factory.ItemId == "" {
+		factory.ItemId = factory.PrimaryItem
+	}
+}
+
+func ensureFactory(s *store.StateManager, id string, name string) *model.FactoryData {
+	factory, exists := s.Factories[id]
+	if !exists {
+		factory = &model.FactoryData{ID: id, IsActive: true, Items: make(map[string]*model.FactoryItem)}
+		s.Factories[id] = factory
+	}
+	if factory.Items == nil {
+		factory.Items = make(map[string]*model.FactoryItem)
+	}
+	if name != "" && !factory.NameLocked {
+		factory.Name = name
+	}
+	applyFactoryOverrides(id, factory)
+	return factory
+}
+
+func ensureFactoryItem(factory *model.FactoryData, itemID string) *model.FactoryItem {
+	if factory.Items == nil {
+		factory.Items = make(map[string]*model.FactoryItem)
+	}
+	item, exists := factory.Items[itemID]
+	if !exists {
+		item = &model.FactoryItem{ItemId: itemID, Visible: true}
+		factory.Items[itemID] = item
+		if factory.PrimaryItem == "" {
+			factory.PrimaryItem = itemID
+			if factory.ItemId == "" {
+				factory.ItemId = itemID
+			}
+		}
+	}
+	return item
 }
 
 // ProcessFlowUpdate 处理海龟产能 (仅计算速率)
@@ -81,35 +145,38 @@ func ProcessFlowUpdate(msg model.IncomingMessage) {
 	defer s.Mutex.Unlock()
 
 	id := msg.ID
-	mul := getItemMultiplier(id, msg.Item)
-	if mul == 0 { return }
+	if id == "" || msg.Item == "" { return }
 
-	factory, exists := s.Factories[id]
-	if !exists {
-		factory = &model.FactoryData{ID: id, Name: id}
-		s.Factories[id] = factory
-	}
+	factory := ensureFactory(s, id, msg.Name)
+	factory.IsActive = true
+	item := ensureFactoryItem(factory, msg.Item)
 
 	// 1. 计算窗口数据
 	now := time.Now()
-	lastTime, seenBefore := lastPacketTimes[id]
-	lastPacketTimes[id] = now
+	if lastPacketTimes[id] == nil {
+		lastPacketTimes[id] = make(map[string]time.Time)
+	}
+	lastTime, seenBefore := lastPacketTimes[id][msg.Item]
+	lastPacketTimes[id][msg.Item] = now
 
 	if !seenBefore { return }
 
 	duration := now.Sub(lastTime).Seconds()
 	if duration < 1.0 { return } // 忽略过快的数据抖动
 
-	currentAmount := float64(msg.Delta) * mul
+	currentAmount := float64(msg.Delta)
 
 	// 2. 更新滑动窗口
 	entry := WindowEntry{Amount: currentAmount, Duration: duration}
-	window := factoryWindows[id]
+	if factoryWindows[id] == nil {
+		factoryWindows[id] = make(map[string][]WindowEntry)
+	}
+	window := factoryWindows[id][msg.Item]
 	window = append(window, entry)
 	if len(window) > WindowSize {
 		window = window[1:]
 	}
-	factoryWindows[id] = window
+	factoryWindows[id][msg.Item] = window
 
 	// 3. 计算平均速率
 	var totalAmount float64
@@ -120,8 +187,15 @@ func ProcessFlowUpdate(msg model.IncomingMessage) {
 	}
 
 	if totalDuration > 0 {
-		factory.ProdRate = (totalAmount / totalDuration) * 3600.0
+		item.ProdRate = (totalAmount / totalDuration) * 3600.0
 	}
+	if factory.PrimaryItem == "" {
+		factory.PrimaryItem = msg.Item
+	}
+	if factory.ItemId == "" {
+		factory.ItemId = factory.PrimaryItem
+	}
+	factory.LastUpdated = now.Unix()
 
 	BroadcastToWeb()
 }
@@ -179,24 +253,24 @@ func updateFactories(now time.Time, data map[string]model.LuaReport, s *store.St
 		}
 	}
 
-	// 根据配置表，主动为每个工厂分配库存
-	for factoryID, conf := range config.FactoryRegistry {
-		var factoryTotalInv float64 = 0
-		for itemID, rate := range conf.Rates {
+	for factoryID, factory := range s.Factories {
+		if factory.Items == nil {
+			factory.Items = make(map[string]*model.FactoryItem)
+		}
+		for itemID, item := range factory.Items {
 			if count, exists := globalInventory[itemID]; exists {
-				factoryTotalInv += float64(count) * rate
+				item.Count = count
+			} else {
+				item.Count = 0
 			}
 		}
-
-		factory, exists := s.Factories[factoryID]
-		if !exists {
-			factory = &model.FactoryData{ID: factoryID, IsActive: true}
-			s.Factories[factoryID] = factory
+		applyFactoryOverrides(factoryID, factory)
+		if factory.PrimaryItem == "" {
+			factory.PrimaryItem = factory.ItemId
 		}
-
-		factory.Name = conf.Name
-		factory.ItemId = conf.Icon
-		factory.Count = int64(factoryTotalInv)
+		if factory.ItemId == "" {
+			factory.ItemId = factory.PrimaryItem
+		}
 		factory.LastUpdated = now.Unix()
 	}
 }
@@ -232,10 +306,67 @@ func ResetFactoryStats(id string) {
 	// 2. 强制归零
 	if factory, exists := s.Factories[id]; exists {
 		factory.IsActive = false
-		factory.ProdRate = 0
+		for _, item := range factory.Items {
+			item.ProdRate = 0
+		}
 		factory.LastUpdated = time.Now().Unix()
 	}
 
 	// 3. 立即广播新状态
+	BroadcastToWeb()
+}
+
+func UpdateFactoryItemSettings(id string, primaryItem string, settings []model.FactoryItemSetting) {
+	s := store.Global
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
+
+	factory, exists := s.Factories[id]
+	if !exists {
+		return
+	}
+	if factory.Items == nil {
+		factory.Items = make(map[string]*model.FactoryItem)
+	}
+
+	for _, setting := range settings {
+		item, ok := factory.Items[setting.ItemId]
+		if !ok {
+			item = &model.FactoryItem{ItemId: setting.ItemId}
+			factory.Items[setting.ItemId] = item
+		}
+		item.Visible = setting.Visible
+		item.Order = setting.Order
+	}
+
+	if primaryItem != "" {
+		factory.PrimaryItem = primaryItem
+		if conf, ok := config.FactoryRegistry[id]; ok && conf.Icon != "" {
+			factory.ItemId = conf.Icon
+		} else {
+			factory.ItemId = primaryItem
+		}
+	}
+
+	BroadcastToWeb()
+}
+
+func UpdateFactoryName(id string, name string) {
+	s := store.Global
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
+
+	factory, exists := s.Factories[id]
+	if !exists {
+		return
+	}
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return
+	}
+
+	factory.Name = name
+	factory.NameLocked = true
+
 	BroadcastToWeb()
 }

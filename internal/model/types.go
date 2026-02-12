@@ -39,26 +39,45 @@ type LuaReport struct {
 
 // FactoryData 发给 Vue 前端的最终数据
 type FactoryData struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	ItemId      string  `json:"itemId"`     // 卡片图标
-	Count       int64   `json:"count"`      // 库存总量
-	IsActive    bool    `json:"isActive"`
-	ProdRate    float64 `json:"prodRate"`   // 纯生产率
-	LastUpdated int64   `json:"lastUpdated"`
+	ID          string                 `json:"id"`
+	Name        string                 `json:"name"`
+	NameLocked  bool                   `json:"nameLocked"`
+	ItemId      string                 `json:"itemId"`      // 卡片图标(兼容旧字段)
+	PrimaryItem string                 `json:"primaryItem"` // 主显示物品
+	Items       map[string]*FactoryItem `json:"items"`
+	IsActive    bool                   `json:"isActive"`
+	LastUpdated int64                  `json:"lastUpdated"`
+}
+
+type FactoryItem struct {
+	ItemId   string  `json:"itemId"`
+	Count    int64   `json:"count"`
+	ProdRate float64 `json:"prodRate"`
+	Visible  bool    `json:"visible"`
+	Order    int     `json:"order"`
+}
+
+type FactoryItemSetting struct {
+	ItemId  string `json:"itemId"`
+	Visible bool   `json:"visible"`
+	Order   int    `json:"order"`
 }
 
 // IncomingMessage 统一接收 Lua 消息
 type IncomingMessage struct {
-	Type  string              `json:"type"`
+	Type  string               `json:"type"`
 	Data  map[string]LuaReport `json:"data"` // AE2 数据
-	ID    string              `json:"id"`    // 海龟 ID
-	Delta int64               `json:"delta"` // 海龟 增量
-	Item  string              `json:"item"`  // 海龟 物品
+	ID    string               `json:"id"`   // 海龟 ID
+	Name  string               `json:"name"` // 海龟名称
+	Delta int64                `json:"delta"`// 海龟 增量
+	Item  string               `json:"item"` // 海龟 物品
 }
 
 // Command 控制指令
 type Command struct {
-	Target string `json:"target"`
-	Action string `json:"action"`
+	Target      string              `json:"target"`
+	Action      string              `json:"action"`
+	Name        string              `json:"name,omitempty"`
+	PrimaryItem string              `json:"primaryItem,omitempty"`
+	Items       []FactoryItemSetting `json:"items,omitempty"`
 }

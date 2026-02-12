@@ -2,7 +2,6 @@ package api
 
 import (
 	"log"
-	"mineCCT/internal/config"
 	"mineCCT/internal/model"
 	"mineCCT/internal/service"
 	"mineCCT/internal/store"
@@ -93,19 +92,25 @@ func HandleWeb(c *gin.Context) {
 			s.Mutex.Unlock()
 			// 广播让前端变绿
 			service.BroadcastToWeb()
+		} else if cmd.Action == "update_factory_items" {
+			service.UpdateFactoryItemSettings(cmd.Target, cmd.PrimaryItem, cmd.Items)
+		} else if cmd.Action == "update_factory_name" {
+			service.UpdateFactoryName(cmd.Target, cmd.Name)
 		}
 
 		// ==========================================
 		// 2. 转发指令给海龟 (需要加锁读取 DeviceConns)
 		// ==========================================
-		s.Mutex.Lock()
-		if targetConn, ok := s.DeviceConns[cmd.Target]; ok {
-			targetConn.WriteJSON(cmd)
-			log.Printf("Command forwarded to [%s]: %s", cmd.Target, cmd.Action)
-		} else {
-			log.Printf("Target [%s] offline, command dropped.", cmd.Target)
+		if cmd.Action == "start" || cmd.Action == "stop" {
+			s.Mutex.Lock()
+			if targetConn, ok := s.DeviceConns[cmd.Target]; ok {
+				targetConn.WriteJSON(cmd)
+				log.Printf("Command forwarded to [%s]: %s", cmd.Target, cmd.Action)
+			} else {
+				log.Printf("Target [%s] offline, command dropped.", cmd.Target)
+			}
+			s.Mutex.Unlock()
 		}
-		s.Mutex.Unlock()
 	}
 }
 
@@ -122,17 +127,19 @@ func HandleIcon(c *gin.Context) {
 // HandleConfig 动态生成白名单
 func HandleConfig(c *gin.Context) {
 	list := make([]string, 0)
-	// 使用 map 去重
 	seen := make(map[string]bool)
 
-	for _, factory := range config.FactoryRegistry {
-		for itemID := range factory.Rates {
+	s := store.Global
+	s.Mutex.RLock()
+	for _, factory := range s.Factories {
+		for itemID := range factory.Items {
 			if !seen[itemID] {
 				list = append(list, itemID)
 				seen[itemID] = true
 			}
 		}
 	}
+	s.Mutex.RUnlock()
 
 	c.JSON(200, gin.H{"monitored_items": list})
 }

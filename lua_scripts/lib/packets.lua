@@ -29,10 +29,11 @@ function M.inventoryUpdate(deviceId, name, isActive, rawItems, energy, storage)
     }
 end
 
-function M.productionFlow(factoryId, delta, itemName)
+function M.productionFlow(factoryId, factoryName, delta, itemName)
     return {
         type = "production_flow",
         id = factoryId,
+        name = factoryName,
         delta = delta,
         item = itemName
     }
