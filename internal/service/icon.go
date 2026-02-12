@@ -50,8 +50,15 @@ func GetIconImage(fullID string) ([]byte, error) {
 
 // 核心逻辑：遍历 JAR 包找图片
 func findImageInMods(modID, itemName string) ([]byte, error) {
+	if modID == "minecraft" {
+		if data, err := findImageInVanillaRepo(itemName); err == nil {
+			return data, nil
+		}
+	}
+
+	modsPath := config.ModsPath()
 	// 读取 mods 目录
-	files, err := os.ReadDir(config.ModsPath)
+	files, err := os.ReadDir(modsPath)
 	if err != nil {
 		return nil, fmt.Errorf("read mods dir failed: %v", err)
 	}
@@ -61,12 +68,8 @@ func findImageInMods(modID, itemName string) ([]byte, error) {
 		if file.IsDir() { continue }
 		name := strings.ToLower(file.Name())
 
-		// 简单的匹配：文件名包含 modID 就进去看看
-		// 比如找 "mekanism:steel"，就进 "Mekanism-1.20.1.jar"
-		// 比如找 "minecraft:iron"，记得把原版 jar 复制进去改名叫 "minecraft.jar"
-		if strings.HasSuffix(name, ".jar") && strings.Contains(name, strings.ToLower(modID)) {
-			
-			zipPath := filepath.Join(config.ModsPath, file.Name())
+		if strings.HasSuffix(name, ".jar") {
+			zipPath := filepath.Join(modsPath, file.Name())
 			r, err := zip.OpenReader(zipPath)
 			if err != nil { continue }
 			defer r.Close()
@@ -76,6 +79,7 @@ func findImageInMods(modID, itemName string) ([]byte, error) {
 				"assets/" + modID + "/textures/item/" + itemName + ".png",
 				"assets/" + modID + "/textures/block/" + itemName + ".png",
 				"assets/" + modID + "/textures/fluid/" + itemName + ".png",
+				"assets/" + modID + "/textures/item/" + itemName + "_item.png",
 			}
 
 			for _, targetPath := range possiblePaths {
@@ -96,4 +100,20 @@ func findImageInMods(modID, itemName string) ([]byte, error) {
 		}
 	}
 	return nil, fmt.Errorf("image not found")
+}
+
+func findImageInVanillaRepo(itemName string) ([]byte, error) {
+	base := config.VanillaTexturesRoot()
+	possiblePaths := []string{
+		filepath.Join(base, "item", itemName+".png"),
+		filepath.Join(base, "block", itemName+".png"),
+		filepath.Join(base, "fluid", itemName+".png"),
+	}
+	for _, path := range possiblePaths {
+		data, err := os.ReadFile(path)
+		if err == nil {
+			return data, nil
+		}
+	}
+	return nil, fmt.Errorf("vanilla texture not found")
 }

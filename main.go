@@ -10,6 +10,16 @@ import (
 
 func main() {
 	r := gin.Default()
+	r.Use(func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization")
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+		c.Next()
+	})
 
 	// 启动后台任务 (清理长期无响应工厂的产率)
 	service.StartBackgroundTasks()
@@ -18,6 +28,7 @@ func main() {
 	r.GET("/ws/minecraft", api.HandleMinecraft)
 	r.GET("/ws/web", api.HandleWeb)
 	r.GET("/icon/:id", api.HandleIcon)
+	r.GET("/item-name/:id", api.HandleItemName)
 	r.GET("/config/whitelist", api.HandleConfig)
 
 	r.Static("/lua", "./lua_scripts")

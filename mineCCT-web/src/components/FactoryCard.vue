@@ -28,7 +28,7 @@
         <div class="item-row" v-for="item in visibleItems" :key="item.itemId">
           <ItemIcon :item-id="item.itemId" />
           <div class="item-meta">
-            <div class="item-id">{{ item.itemId }}</div>
+            <div class="item-id" :title="item.itemId">{{ getItemName(item.itemId) }}</div>
             <div class="item-stats">
               {{ formatNumber(item.prodRate) }}/h · {{ formatCompact(item.count) }}
             </div>
@@ -84,7 +84,7 @@
         >
           <el-checkbox v-model="item.visible" @change="commitSettings"></el-checkbox>
           <span class="drag-handle">||</span>
-          <span class="settings-id">{{ item.itemId }}</span>
+          <span class="settings-id" :title="item.itemId">{{ getItemName(item.itemId) }}</span>
         </div>
       </div>
     </div>
@@ -95,6 +95,7 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import ItemIcon from './ItemIcon.vue' // 确保你目录下有这个组件
+import { useItemNames } from '../composables/useItemNames'
 
 const props = defineProps(['factory'])
 const emit = defineEmits(['command']) // 改名为 command 更语义化
@@ -106,6 +107,7 @@ const dialogVisible = ref(false)
 const dragIndex = ref(null)
 const localName = ref(props.factory?.name || '')
 const nameEditing = ref(false)
+const { names: itemNames, ensureName } = useItemNames()
 
 // 监听后端状态变化，同步给开关
 // 防止网页手动开关后，后端还没更新，导致开关状态不一致
@@ -178,6 +180,10 @@ function commitName() {
 const itemsList = computed(() => normalizeItems(props.factory?.items))
 const sortedItems = computed(() => sortItems(itemsList.value))
 
+watch(itemsList, (items) => {
+  items.forEach((item) => ensureName(item.itemId))
+}, { immediate: true })
+
 const visibleItems = computed(() => {
   const list = sortedItems.value.filter((item) => item.visible)
   return list
@@ -205,6 +211,11 @@ function sortItems(items) {
     if (orderA !== orderB) return orderA - orderB
     return byName(a, b)
   })
+}
+
+function getItemName(itemId) {
+  ensureName(itemId)
+  return itemNames.value[itemId] || itemId
 }
 
 function commitSettings() {

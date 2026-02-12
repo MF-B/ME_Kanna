@@ -124,6 +124,16 @@ func HandleIcon(c *gin.Context) {
 	c.Data(200, "image/png", data)
 }
 
+func HandleItemName(c *gin.Context) {
+	fullID := c.Param("id")
+	name, err := service.GetItemDisplayName(fullID)
+	if err != nil {
+		c.JSON(200, gin.H{"id": fullID, "name": name})
+		return
+	}
+	c.JSON(200, gin.H{"id": fullID, "name": name})
+}
+
 // HandleConfig 动态生成白名单
 func HandleConfig(c *gin.Context) {
 	list := make([]string, 0)
