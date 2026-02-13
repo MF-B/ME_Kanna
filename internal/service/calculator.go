@@ -39,17 +39,17 @@ func applyFactoryOverrides(factoryID string, factory *model.FactoryData) {
 			factory.PrimaryItem = conf.PrimaryItem
 		}
 		if conf.Icon != "" {
-			factory.ItemId = conf.Icon
+			factory.ItemID = conf.Icon
 		}
 	}
 	if factory.Name == "" {
 		factory.Name = factoryID
 	}
 	if factory.PrimaryItem == "" {
-		factory.PrimaryItem = factory.ItemId
+		factory.PrimaryItem = factory.ItemID
 	}
-	if factory.ItemId == "" {
-		factory.ItemId = factory.PrimaryItem
+	if factory.ItemID == "" {
+		factory.ItemID = factory.PrimaryItem
 	}
 }
 
@@ -75,12 +75,12 @@ func ensureFactoryItem(factory *model.FactoryData, itemID string) (*model.Factor
 	}
 	item, exists := factory.Items[itemID]
 	if !exists {
-		item = &model.FactoryItem{ItemId: itemID, Visible: true}
+		item = &model.FactoryItem{ItemID: itemID, Visible: true}
 		factory.Items[itemID] = item
 		if factory.PrimaryItem == "" {
 			factory.PrimaryItem = itemID
-			if factory.ItemId == "" {
-				factory.ItemId = itemID
+			if factory.ItemID == "" {
+				factory.ItemID = itemID
 			}
 		}
 		return item, true
@@ -94,14 +94,14 @@ func ProcessFlowUpdate(msg model.IncomingMessage) {
 	s.Mutex.Lock()
 
 	id := msg.ID
-	if id == "" || msg.Item == "" {
+	if id == "" || msg.ItemID == "" {
 		s.Mutex.Unlock()
 		return
 	}
 
 	factory := ensureFactory(s, id, msg.Name)
 	factory.IsActive = true
-	item, created := ensureFactoryItem(factory, msg.Item)
+	item, created := ensureFactoryItem(factory, msg.ItemID)
 
 	var collected []string
 	if created {
@@ -124,7 +124,7 @@ func ProcessFlowUpdate(msg model.IncomingMessage) {
 	if factoryBuckets[id] == nil {
 		factoryBuckets[id] = make(map[string][]RateBucket)
 	}
-	buckets := factoryBuckets[id][msg.Item]
+	buckets := factoryBuckets[id][msg.ItemID]
 	if len(buckets) != RateBucketCount {
 		buckets = make([]RateBucket, RateBucketCount)
 	}
@@ -135,7 +135,7 @@ func ProcessFlowUpdate(msg model.IncomingMessage) {
 		bucket.Amount = 0
 	}
 	bucket.Amount += float64(msg.Delta)
-	factoryBuckets[id][msg.Item] = buckets
+	factoryBuckets[id][msg.ItemID] = buckets
 
 	// 2. 计算 10 分钟平均速率
 	var totalAmount float64
@@ -147,10 +147,10 @@ func ProcessFlowUpdate(msg model.IncomingMessage) {
 	}
 	item.ProdRate = (totalAmount / float64(RateBucketCount)) * 60.0
 	if factory.PrimaryItem == "" {
-		factory.PrimaryItem = msg.Item
+		factory.PrimaryItem = msg.ItemID
 	}
-	if factory.ItemId == "" {
-		factory.ItemId = factory.PrimaryItem
+	if factory.ItemID == "" {
+		factory.ItemID = factory.PrimaryItem
 	}
 	factory.LastUpdated = now.Unix()
 
@@ -224,10 +224,10 @@ func updateFactories(now time.Time, report model.LuaReport, s *store.StateManage
 		}
 		applyFactoryOverrides(factoryID, factory)
 		if factory.PrimaryItem == "" {
-			factory.PrimaryItem = factory.ItemId
+			factory.PrimaryItem = factory.ItemID
 		}
-		if factory.ItemId == "" {
-			factory.ItemId = factory.PrimaryItem
+		if factory.ItemID == "" {
+			factory.ItemID = factory.PrimaryItem
 		}
 		factory.LastUpdated = now.Unix()
 	}
@@ -287,10 +287,10 @@ func UpdateFactoryItemSettings(id string, primaryItem string, settings []model.F
 	}
 
 	for _, setting := range settings {
-		item, ok := factory.Items[setting.ItemId]
+		item, ok := factory.Items[setting.ItemID]
 		if !ok {
-			item = &model.FactoryItem{ItemId: setting.ItemId}
-			factory.Items[setting.ItemId] = item
+			item = &model.FactoryItem{ItemID: setting.ItemID}
+			factory.Items[setting.ItemID] = item
 		}
 		item.Visible = setting.Visible
 		item.Order = setting.Order
@@ -299,9 +299,9 @@ func UpdateFactoryItemSettings(id string, primaryItem string, settings []model.F
 	if primaryItem != "" {
 		factory.PrimaryItem = primaryItem
 		if conf, ok := config.FactoryRegistry[id]; ok && conf.Icon != "" {
-			factory.ItemId = conf.Icon
+			factory.ItemID = conf.Icon
 		} else {
-			factory.ItemId = primaryItem
+			factory.ItemID = primaryItem
 		}
 	}
 

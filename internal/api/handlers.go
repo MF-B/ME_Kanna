@@ -9,6 +9,7 @@ import (
 	"mineCCT/internal/service"
 	"mineCCT/internal/store"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -77,6 +78,8 @@ func HandleMinecraft(c *gin.Context) {
 			service.ProcessInventoryUpdate(msg.ID, msg.Data)
 		case "production_flow":
 			service.ProcessFlowUpdate(msg)
+		case "craftables":
+			service.ProcessCraftablesUpdate(msg.ID, msg.Craftables)
 		}
 	}
 
@@ -221,4 +224,32 @@ func HandleConfigUpdate(c *gin.Context) {
 		_ = conn.WriteJSON(payload)
 	}
 	c.JSON(200, gin.H{"monitored_items": updated, "version": version})
+}
+
+func HandleAutoCraftables(c *gin.Context) {
+	requestID := fmt.Sprintf("%d", time.Now().UnixNano())
+	target := c.Query("target")
+	requested := service.RequestCraftablesRefresh(target, requestID)
+	items, lastUpdated := service.GetCraftablesSnapshot()
+	c.JSON(200, gin.H{
+		"items":       items,
+		"requested":   requested,
+		"lastUpdated": lastUpdated,
+	})
+}
+
+func HandleAutoCraftRecipe(c *gin.Context) {
+	itemID := c.Query("itemId")
+	if itemID == "" {
+		c.JSON(400, gin.H{"error": "missing itemId"})
+		return
+	}
+
+	recipe := service.BuildRecipeSnapshot(itemID)
+	if recipe == nil {
+		c.JSON(404, gin.H{"error": "recipe not found"})
+		return
+	}
+
+	c.JSON(200, recipe)
 }

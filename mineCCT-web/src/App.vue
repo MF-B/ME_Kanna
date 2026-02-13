@@ -155,8 +155,213 @@
               />
             </section>
           </el-tab-pane>
+
+          <el-tab-pane label="库存控制" name="inventory-control">
+            <section class="panel-section">
+              <div class="panel-title autocraft-title">
+                <span>自动合成任务</span>
+                <span class="panel-subtitle">实时监控库存阈值并级联合成</span>
+              </div>
+
+              <el-row :gutter="20">
+                <el-col
+                  v-for="task in autoCraftTasks"
+                  :key="task.itemId"
+                  :xs="24" :sm="12" :md="8" :lg="6"
+                  style="margin-bottom: 20px;"
+                >
+                  <el-card class="autocraft-card" shadow="hover" @click="openTaskDetail(task)">
+                    <div class="autocraft-card-header">
+                      <ItemIcon :item-id="task.itemId" />
+                      <div class="autocraft-card-title">
+                        <div class="name">{{ displayItemName(task.itemId, task.itemName) }}</div>
+                        <div class="id">{{ task.itemId }}</div>
+                      </div>
+                      <el-tag :type="task.isActive ? 'success' : 'info'" effect="dark" size="small">
+                        {{ task.isActive ? 'ACTIVE' : 'PAUSED' }}
+                      </el-tag>
+                    </div>
+                    <div class="autocraft-card-body">
+                      <div class="autocraft-stat">
+                        <span>当前库存</span>
+                        <strong>{{ formatCompact(inventoryIndex[task.itemId] || 0) }}</strong>
+                      </div>
+                      <div class="autocraft-stat">
+                        <span>目标阈值</span>
+                        <strong>{{ task.minThreshold }} / {{ task.maxThreshold }}</strong>
+                      </div>
+                    </div>
+                    <div class="autocraft-card-footer">
+                      <el-switch
+                        v-model="task.isActive"
+                        inline-prompt
+                        active-text="ON"
+                        inactive-text="OFF"
+                        @click.stop
+                      />
+                      <span class="autocraft-footer-hint">点击查看依赖树</span>
+                    </div>
+                  </el-card>
+                </el-col>
+              </el-row>
+
+              <el-empty
+                v-if="autoCraftTasks.length === 0"
+                description="还没有自动合成任务，点击右下角 + 创建"
+              />
+            </section>
+          </el-tab-pane>
         </el-tabs>
       </main>
+
+      <el-button
+        v-if="activeTab === 'inventory-control'"
+        class="fab-button"
+        type="primary"
+        @click="openWizard"
+      >
+        <span class="fab-icon">+</span>
+      </el-button>
+
+      <el-dialog
+        v-model="wizardVisible"
+        width="780px"
+        class="autocraft-dialog"
+        :append-to-body="true"
+        :close-on-click-modal="false"
+      >
+        <template #header>
+          <div class="dialog-header">
+            <div class="dialog-title">自动合成配置向导</div>
+            <div class="dialog-subtitle">为你的工厂建立智能库存阈值</div>
+          </div>
+        </template>
+
+        <el-steps :active="wizardStep - 1" finish-status="success" align-center>
+          <el-step title="选择物品" />
+          <el-step title="阈值设置" />
+          <el-step title="级联原料" />
+        </el-steps>
+
+        <div class="wizard-body" v-if="wizardStep === 1">
+          <div class="wizard-toolbar">
+            <el-input v-model="craftableQuery" placeholder="搜索可合成物品" clearable />
+            <el-button :loading="craftablesLoading" @click="fetchCraftables">刷新</el-button>
+          </div>
+          <div class="craftable-list">
+            <el-scrollbar height="280px">
+              <div
+                v-for="item in filteredCraftables"
+                :key="item.itemId"
+                class="craftable-row"
+                :class="{ selected: selectedCraftable && selectedCraftable.itemId === item.itemId }"
+                @click="selectCraftable(item)"
+              >
+                <ItemIcon :item-id="item.itemId" />
+                <div class="craftable-meta">
+                  <div class="name">{{ displayItemName(item.itemId, item.itemName) }}</div>
+                  <div class="id">{{ item.itemId }}</div>
+                </div>
+              </div>
+            </el-scrollbar>
+          </div>
+        </div>
+
+        <div class="wizard-body" v-else-if="wizardStep === 2">
+          <div class="wizard-summary">
+            <ItemIcon :item-id="selectedCraftable?.itemId" />
+            <div>
+              <div class="name">{{ displayItemName(selectedCraftable?.itemId, selectedCraftable?.itemName) }}</div>
+              <div class="id">{{ selectedCraftable?.itemId }}</div>
+            </div>
+          </div>
+          <div class="threshold-grid">
+            <div class="threshold-item">
+              <div class="label">最低触发阈值</div>
+              <el-input-number v-model="minThreshold" :min="1" :step="1" />
+            </div>
+            <div class="threshold-item">
+              <div class="label">补货目标阈值</div>
+              <el-input-number v-model="maxThreshold" :min="1" :step="1" />
+            </div>
+          </div>
+          <div class="threshold-hint">默认建议: 最低 64，目标 256</div>
+        </div>
+
+        <div class="wizard-body" v-else>
+          <div class="wizard-summary">
+            <div>
+              <div class="name">级联设置</div>
+              <div class="id">是否也为原料自动建立阈值任务?</div>
+            </div>
+          </div>
+          <div class="cascade-list">
+            <el-checkbox-group v-model="cascadeSelection">
+              <div
+                v-for="material in cascadeOptions"
+                :key="material.itemId"
+                class="cascade-row"
+              >
+                <el-checkbox :label="material.itemId">
+                  <div class="cascade-item">
+                    <ItemIcon :item-id="material.itemId" />
+                    <div>
+                      <div class="name">{{ displayItemName(material.itemId, material.itemName) }}</div>
+                      <div class="id">默认 {{ defaultMinThreshold }} / {{ defaultMaxThreshold }}</div>
+                    </div>
+                  </div>
+                </el-checkbox>
+              </div>
+            </el-checkbox-group>
+          </div>
+        </div>
+
+        <template #footer>
+          <div class="wizard-footer">
+            <el-button @click="closeWizard">取消</el-button>
+            <el-button v-if="wizardStep > 1" @click="prevWizardStep">上一步</el-button>
+            <el-button
+              v-if="wizardStep < 3"
+              type="primary"
+              :disabled="wizardStep === 1 && !selectedCraftable"
+              :loading="recipeLoading"
+              @click="nextWizardStep"
+            >
+              下一步
+            </el-button>
+            <el-button
+              v-else
+              type="primary"
+              @click="finishWizard"
+            >
+              创建任务
+            </el-button>
+          </div>
+        </template>
+      </el-dialog>
+
+      <el-dialog
+        v-model="detailVisible"
+        width="860px"
+        class="autocraft-detail-dialog"
+        :append-to-body="true"
+      >
+        <template #header>
+          <div class="dialog-header">
+            <div class="dialog-title">依赖树</div>
+            <div class="dialog-subtitle">实时库存 vs 阈值目标</div>
+          </div>
+        </template>
+
+        <div v-if="detailTask && detailTask.recipeSnapshot" class="tree-panel">
+          <AutoCraftTree
+            :node="detailTask.recipeSnapshot"
+            :inventory-index="inventoryIndex"
+            :task-index="taskIndex"
+          />
+        </div>
+        <el-empty v-else description="还没有合成配方数据" />
+      </el-dialog>
 
     </div>
   </el-config-provider>
@@ -165,6 +370,9 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import FactoryCard from './components/FactoryCard.vue'
+import ItemIcon from './components/ItemIcon.vue'
+import AutoCraftTree from './components/AutoCraftTree.vue'
+import { useItemNames } from './composables/useItemNames'
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import { ElMessage } from 'element-plus'
 
@@ -172,6 +380,24 @@ import { ElMessage } from 'element-plus'
 const connected = ref(false)
 const factories = ref([])
 const activeTab = ref('monitor')
+const autoCraftTasks = ref([])
+
+const wizardVisible = ref(false)
+const wizardStep = ref(1)
+const craftables = ref([])
+const craftablesLoading = ref(false)
+const craftableQuery = ref('')
+const selectedCraftable = ref(null)
+const minThreshold = ref(64)
+const maxThreshold = ref(256)
+const recipeTree = ref(null)
+const recipeLoading = ref(false)
+const cascadeOptions = ref([])
+const cascadeSelection = ref([])
+
+const detailVisible = ref(false)
+const detailTask = ref(null)
+const { names: itemNameMap, ensureName } = useItemNames()
 
 const systemStatus = ref({
   energyStored: 0,
@@ -193,6 +419,9 @@ const systemStatus = ref({
 })
 
 let socket = null
+
+const defaultMinThreshold = 64
+const defaultMaxThreshold = 256
 
 // --- WebSocket 逻辑 ---
 const connectWS = () => {
@@ -243,6 +472,27 @@ const connectWS = () => {
     }
   }
 }
+
+const inventoryIndex = computed(() => {
+  const index = {}
+  factories.value.forEach((factoryData) => {
+    const factoryItems = factoryData?.items || {}
+    Object.values(factoryItems).forEach((factoryItem) => {
+      if (factoryItem?.itemId) {
+        index[factoryItem.itemId] = factoryItem.count || 0
+      }
+    })
+  })
+  return index
+})
+
+const taskIndex = computed(() => {
+  const index = {}
+  autoCraftTasks.value.forEach((task) => {
+    index[task.itemId] = task
+  })
+  return index
+})
 
 const energyPercent = computed(() => {
   if (!systemStatus.value.energyMax) return 0
@@ -312,6 +562,182 @@ function formatTime(epochSeconds) {
   if (!epochSeconds) return '--:--:--'
   const date = new Date(epochSeconds * 1000)
   return date.toLocaleTimeString('zh-CN', { hour12: false })
+}
+
+function getApiBase() {
+  const host = window.location.hostname
+  const protocol = window.location.protocol
+  return `${protocol}//${host}:8080`
+}
+
+const filteredCraftables = computed(() => {
+  const query = craftableQuery.value.trim().toLowerCase()
+  if (!query) return craftables.value
+  return craftables.value.filter((craftableItem) => {
+    const itemIdKeyword = (craftableItem.itemId || '').toLowerCase()
+    const itemNameKeyword = displayItemName(craftableItem.itemId, craftableItem.itemName).toLowerCase()
+    return itemIdKeyword.includes(query) || itemNameKeyword.includes(query)
+  })
+})
+
+async function fetchCraftables() {
+  craftablesLoading.value = true
+  try {
+    const res = await fetch(`${getApiBase()}/autocraft/craftables`)
+    const data = await res.json()
+    const craftableList = Array.isArray(data) ? data : (data.items || [])
+    craftables.value = craftableList.map((craftableEntry) => {
+      if (typeof craftableEntry === 'string') {
+        return { itemId: craftableEntry, itemName: craftableEntry }
+      }
+      return {
+        itemId: craftableEntry.itemId,
+        itemName: craftableEntry.itemName || craftableEntry.itemId
+      }
+    }).filter((craftableEntry) => craftableEntry.itemId)
+
+    craftables.value.forEach((craftableEntry) => {
+      ensureName(craftableEntry.itemId)
+    })
+  } catch (err) {
+    craftables.value = []
+    ElMessage.error('获取可合成列表失败')
+  } finally {
+    craftablesLoading.value = false
+  }
+}
+
+function openWizard() {
+  wizardVisible.value = true
+  wizardStep.value = 1
+  craftableQuery.value = ''
+  selectedCraftable.value = null
+  minThreshold.value = defaultMinThreshold
+  maxThreshold.value = defaultMaxThreshold
+  recipeTree.value = null
+  cascadeOptions.value = []
+  cascadeSelection.value = []
+  fetchCraftables()
+}
+
+function closeWizard() {
+  wizardVisible.value = false
+}
+
+function selectCraftable(item) {
+  selectedCraftable.value = item
+  ensureName(item.itemId)
+}
+
+function prevWizardStep() {
+  if (wizardStep.value > 1) {
+    wizardStep.value -= 1
+  }
+}
+
+async function nextWizardStep() {
+  if (wizardStep.value === 1) {
+    wizardStep.value = 2
+    return
+  }
+  if (wizardStep.value === 2) {
+    recipeLoading.value = true
+    try {
+      const itemId = selectedCraftable.value?.itemId
+      const res = await fetch(`${getApiBase()}/autocraft/recipe?itemId=${encodeURIComponent(itemId)}`)
+      const data = await res.json()
+      recipeTree.value = data
+      ensureName(itemId)
+      cascadeOptions.value = collectRecipeLeaves(data, itemId)
+      cascadeSelection.value = cascadeOptions.value.map((materialEntry) => materialEntry.itemId)
+      wizardStep.value = 3
+    } catch (err) {
+      ElMessage.error('获取配方失败')
+    } finally {
+      recipeLoading.value = false
+    }
+  }
+}
+
+function finishWizard() {
+  const main = selectedCraftable.value
+  if (!main) return
+
+  upsertTask({
+    itemId: main.itemId,
+    itemName: displayItemName(main.itemId, main.itemName),
+    minThreshold: minThreshold.value,
+    maxThreshold: maxThreshold.value,
+    isActive: true,
+    recipeSnapshot: recipeTree.value
+  })
+
+  cascadeSelection.value.forEach((itemId) => {
+    const node = findRecipeNode(recipeTree.value, itemId)
+    upsertTask({
+      itemId,
+      itemName: displayItemName(itemId, node?.itemName || itemId),
+      minThreshold: defaultMinThreshold,
+      maxThreshold: defaultMaxThreshold,
+      isActive: true,
+      recipeSnapshot: node || null
+    })
+  })
+
+  wizardVisible.value = false
+}
+
+function openTaskDetail(task) {
+  detailTask.value = task
+  detailVisible.value = true
+}
+
+function upsertTask(task) {
+  const index = autoCraftTasks.value.findIndex((t) => t.itemId === task.itemId)
+  if (index >= 0) {
+    autoCraftTasks.value[index] = { ...autoCraftTasks.value[index], ...task }
+  } else {
+    autoCraftTasks.value = [...autoCraftTasks.value, task]
+  }
+
+  ensureName(task.itemId)
+}
+
+function collectRecipeLeaves(node, rootId) {
+  const list = []
+  const seen = new Set()
+  const walk = (recipeNode) => {
+    if (!recipeNode) return
+    const children = recipeNode.children || []
+    if (!children.length) {
+      if (recipeNode.itemId && recipeNode.itemId !== rootId && !seen.has(recipeNode.itemId)) {
+        seen.add(recipeNode.itemId)
+        ensureName(recipeNode.itemId)
+        list.push({ itemId: recipeNode.itemId, itemName: displayItemName(recipeNode.itemId, recipeNode.itemName || recipeNode.itemId) })
+      }
+      return
+    }
+    children.forEach(walk)
+  }
+  walk(node)
+  return list
+}
+
+function findRecipeNode(node, itemId) {
+  if (!node) return null
+  if (node.itemId === itemId) return node
+  const children = node.children || []
+  for (const childNode of children) {
+    const found = findRecipeNode(childNode, itemId)
+    if (found) return found
+  }
+  return null
+}
+
+function displayItemName(itemId, fallbackName) {
+  if (!itemId) return fallbackName || ''
+  ensureName(itemId)
+  return itemNameMap.value[itemId] || fallbackName || itemId
 }
 
 // --- 发送指令 ---
@@ -577,6 +1003,255 @@ h1 {
 
 .storage-block .block-row.muted {
   color: #7e88a7;
+}
+
+.autocraft-title {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.panel-subtitle {
+  font-size: 0.85rem;
+  text-transform: none;
+  letter-spacing: 0.5px;
+  color: #7b86a9;
+}
+
+.autocraft-card {
+  background: linear-gradient(140deg, rgba(20, 24, 35, 0.95), rgba(14, 18, 28, 0.85));
+  border: 1px solid rgba(79, 110, 255, 0.25);
+  border-radius: 16px;
+  color: #eef2ff;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+.autocraft-card-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.autocraft-card-title .name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f1f5ff;
+}
+
+.autocraft-card-title .id {
+  font-size: 0.75rem;
+  color: #8b93aa;
+}
+
+.autocraft-card-body {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.autocraft-stat {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #c3c9dd;
+}
+
+.autocraft-stat strong {
+  color: #e6ecff;
+}
+
+.autocraft-card-footer {
+  margin-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.autocraft-footer-hint {
+  font-size: 0.75rem;
+  color: #7f88a6;
+}
+
+.fab-button {
+  position: fixed;
+  right: 36px;
+  bottom: 36px;
+  width: 56px;
+  height: 56px;
+  border: none;
+  background: radial-gradient(circle at top, #58f0c2, #1b7f6a);
+  box-shadow: 0 12px 28px rgba(27, 127, 106, 0.4);
+  color: #0d1216;
+  z-index: 10;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.fab-icon {
+  font-size: 2rem;
+  line-height: 1;
+  font-weight: 300;
+  margin-top: -4px;
+}
+
+.fab-button:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 16px 36px rgba(27, 127, 106, 0.5);
+}
+
+.autocraft-dialog .el-dialog__body,
+.autocraft-detail-dialog .el-dialog__body {
+  padding-top: 14px;
+}
+
+.dialog-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dialog-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #e6f6ff;
+}
+
+.dialog-subtitle {
+  font-size: 0.85rem;
+  color: #7c8ab0;
+}
+
+.wizard-body {
+  margin-top: 20px;
+}
+
+.wizard-toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.craftable-list {
+  border: 1px solid rgba(96, 115, 168, 0.25);
+  border-radius: 12px;
+  background: rgba(11, 15, 24, 0.7);
+}
+
+.craftable-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(96, 115, 168, 0.15);
+}
+
+.craftable-row:last-child {
+  border-bottom: none;
+}
+
+.craftable-row.selected {
+  background: rgba(61, 214, 165, 0.15);
+}
+
+.craftable-meta .name {
+  font-weight: 600;
+  color: #eff3ff;
+}
+
+.craftable-meta .id {
+  font-size: 0.75rem;
+  color: #8b93aa;
+}
+
+.wizard-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(12, 16, 25, 0.7);
+  border-radius: 12px;
+  border: 1px solid rgba(96, 115, 168, 0.3);
+}
+
+.wizard-summary .name {
+  font-weight: 600;
+  color: #f1f5ff;
+}
+
+.wizard-summary .id {
+  font-size: 0.8rem;
+  color: #8b93aa;
+}
+
+.threshold-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.threshold-item {
+  padding: 12px 14px;
+  background: rgba(12, 16, 25, 0.7);
+  border-radius: 12px;
+  border: 1px solid rgba(96, 115, 168, 0.3);
+}
+
+.threshold-item .label {
+  font-size: 0.8rem;
+  color: #8b93aa;
+  margin-bottom: 8px;
+}
+
+.threshold-hint {
+  margin-top: 12px;
+  font-size: 0.8rem;
+  color: #7c8ab0;
+}
+
+.cascade-list {
+  margin-top: 16px;
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid rgba(96, 115, 168, 0.25);
+  border-radius: 12px;
+  padding: 8px 12px;
+}
+
+.cascade-row {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(96, 115, 168, 0.15);
+}
+
+.cascade-row:last-child {
+  border-bottom: none;
+}
+
+.cascade-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.tree-panel {
+  margin-top: 16px;
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 16px 18px;
+  }
+
+  .fab-button {
+    right: 18px;
+    bottom: 18px;
+  }
 }
 
 /* 状态灯样式 */

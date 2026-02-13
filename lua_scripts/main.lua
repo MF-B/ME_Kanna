@@ -9,13 +9,30 @@ local util = require("util")
 
 local ae_device = nil
 
+local function normalizeCraftables(rawCraftables)
+    local normalizedCraftables = {}
+    if type(rawCraftables) ~= "table" then return normalizedCraftables end
+
+    for _, craftableEntry in ipairs(rawCraftables) do
+        local itemId = craftableEntry and craftableEntry.name
+        if type(itemId) == "string" and itemId ~= "" then
+            table.insert(normalizedCraftables, {
+                itemId = itemId,
+                itemName = craftableEntry.displayName or itemId
+            })
+        end
+    end
+
+    return normalizedCraftables
+end
+
 local function sendLoop(ws)
     while true do
         ae_device = aeBridge.ensureBridge(ae_device)
 
         if ae_device then
             -- 1. 采集数据 (全都在 aeBridge 里封装好了)
-            local filtered_items = aeBridge.collectFilteredItems(ae_device, whitelist.getList())
+            local filteredItems = aeBridge.collectFilteredItems(ae_device, whitelist.getList())
             local energy = aeBridge.collectEnergy(ae_device)
             local storage = aeBridge.collectStorage(ae_device)
             
@@ -24,7 +41,7 @@ local function sendLoop(ws)
                 config.DEVICE_ID,
                 "Main Storage",
                 true,
-                filtered_items,
+                filteredItems,
                 energy,
                 storage,
                 whitelist.getVersion()
@@ -46,6 +63,30 @@ local function receiveLoop(ws)
             local packet = textutils.unserializeJSON(msg)
             if whitelist.handlePacket(packet) then
                 print("WS: Config Updated!")
+            elseif packet and packet.type == "cmd_craftables" then
+                ae_device = aeBridge.ensureBridge(ae_device)
+                if ae_device then
+                    local craftableList = normalizeCraftables(aeBridge.getCraftables(ae_device))
+                    util.sendJson(ws, packets.craftablesUpdate(config.DEVICE_ID, craftableList, packet.requestId))
+                    print("Craftables sent: " .. tostring(#craftableList))
+                else
+                    print("Craftables request failed: no ME Bridge")
+                end
+            elseif packet and packet.type == "craft" then
+                local itemId = packet.itemId
+                local count = tonumber(packet.count) or 1
+                if itemId and itemId ~= "" then
+                    ae_device = aeBridge.ensureBridge(ae_device)
+                    if ae_device then
+                        local task = aeBridge.craft(ae_device, itemId, count)
+                        local ok = task ~= nil
+                        print("Craft: " .. tostring(itemId) .. " x" .. tostring(count) .. " -> " .. tostring(ok))
+                    else
+                        print("Craft failed: no ME Bridge")
+                    end
+                else
+                    print("Craft ignored: missing item id")
+                end
             end
         else
             print("WS Disconnected")

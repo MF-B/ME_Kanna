@@ -33,6 +33,8 @@ func main() {
 	r.GET("/config/whitelist", api.HandleConfig)
 	r.POST("/config/whitelist", api.HandleConfigUpdate)
 	r.PUT("/config/whitelist", api.HandleConfigUpdate)
+	r.GET("/autocraft/craftables", api.HandleAutoCraftables)
+	r.GET("/autocraft/recipe", api.HandleAutoCraftRecipe)
 
 	r.Static("/lua", "./lua_scripts")
 

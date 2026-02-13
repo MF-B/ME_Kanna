@@ -50,10 +50,11 @@ local function mainLoop(ws)
             -- 任务1: 监控库存 (发送)
             function()
                 while true do
-                    local event, side = os.pullEvent("turtle_inventory")
-                    local item = turtle.getItemDetail(1)
-                    if item then
-                        local payload = packets.productionFlow(factoryId, factoryName, item.count, item.name)
+                    local _, _ = os.pullEvent("turtle_inventory")
+                    local itemDetail = turtle.getItemDetail(1)
+                    if itemDetail then
+                        local itemId = itemDetail.name
+                        local payload = packets.productionFlow(factoryId, factoryName, itemDetail.count, itemId)
                         util.sendJson(ws, payload)
                         while not turtle.dropDown() do sleep(2) end
                     end

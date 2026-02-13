@@ -167,12 +167,12 @@ function handleDrop() {
 }
 
 function commitName() {
-  const name = localName.value?.trim()
-  if (!name) return
+  const nextName = localName.value?.trim()
+  if (!nextName) return
   emit('command', {
     target: props.factory.id,
     action: 'update_factory_name',
-    name
+    name: nextName
   })
   nameEditing.value = false
 }
@@ -180,36 +180,36 @@ function commitName() {
 const itemsList = computed(() => normalizeItems(props.factory?.items))
 const sortedItems = computed(() => sortItems(itemsList.value))
 
-watch(itemsList, (items) => {
-  items.forEach((item) => ensureName(item.itemId))
+watch(itemsList, (itemList) => {
+  itemList.forEach((factoryItem) => ensureName(factoryItem.itemId))
 }, { immediate: true })
 
 const visibleItems = computed(() => {
-  const list = sortedItems.value.filter((item) => item.visible)
-  return list
+  const visibleItemList = sortedItems.value.filter((factoryItem) => factoryItem.visible)
+  return visibleItemList
 })
 
-function normalizeItems(items) {
-  if (!items) return []
-  const list = Array.isArray(items) ? items : Object.values(items)
-  return list.map((item) => ({
-    ...item,
-    visible: item.visible !== false,
-    order: Number.isFinite(item.order) ? item.order : 0
+function normalizeItems(rawItems) {
+  if (!rawItems) return []
+  const itemList = Array.isArray(rawItems) ? rawItems : Object.values(rawItems)
+  return itemList.map((factoryItem) => ({
+    ...factoryItem,
+    visible: factoryItem.visible !== false,
+    order: Number.isFinite(factoryItem.order) ? factoryItem.order : 0
   }))
 }
 
-function sortItems(items) {
-  const hasOrder = items.some((item) => item.order && item.order > 0)
-  const byName = (a, b) => (a.itemId || '').localeCompare(b.itemId || '')
+function sortItems(itemList) {
+  const hasOrder = itemList.some((factoryItem) => factoryItem.order && factoryItem.order > 0)
+  const byItemId = (leftItem, rightItem) => (leftItem.itemId || '').localeCompare(rightItem.itemId || '')
   if (!hasOrder) {
-    return [...items].sort(byName)
+    return [...itemList].sort(byItemId)
   }
-  return [...items].sort((a, b) => {
-    const orderA = a.order && a.order > 0 ? a.order : Number.POSITIVE_INFINITY
-    const orderB = b.order && b.order > 0 ? b.order : Number.POSITIVE_INFINITY
-    if (orderA !== orderB) return orderA - orderB
-    return byName(a, b)
+  return [...itemList].sort((leftItem, rightItem) => {
+    const leftOrder = leftItem.order && leftItem.order > 0 ? leftItem.order : Number.POSITIVE_INFINITY
+    const rightOrder = rightItem.order && rightItem.order > 0 ? rightItem.order : Number.POSITIVE_INFINITY
+    if (leftOrder !== rightOrder) return leftOrder - rightOrder
+    return byItemId(leftItem, rightItem)
   })
 }
 
@@ -222,9 +222,9 @@ function commitSettings() {
   emit('command', {
     target: props.factory.id,
     action: 'update_factory_items',
-    items: localItems.value.map((item, index) => ({
-      itemId: item.itemId,
-      visible: item.visible,
+    items: localItems.value.map((factoryItem, index) => ({
+      itemId: factoryItem.itemId,
+      visible: factoryItem.visible,
       order: index + 1
     }))
   })

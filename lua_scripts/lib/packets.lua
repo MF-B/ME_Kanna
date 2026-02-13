@@ -22,14 +22,26 @@ function M.inventoryUpdate(deviceId, name, isActive, rawItems, energy, storage, 
     return payload
 end
 
-function M.productionFlow(factoryId, factoryName, delta, itemName)
+function M.productionFlow(factoryId, factoryName, delta, itemId)
     return {
         type = "production_flow",
         id = factoryId,
         name = factoryName,
         delta = delta,
-        item = itemName
+        itemId = itemId
     }
+end
+
+function M.craftablesUpdate(deviceId, craftables, requestId)
+    local payload = {
+        type = "craftables",
+        id = deviceId,
+        craftables = craftables or {}
+    }
+    if requestId and requestId ~= "" then
+        payload.requestId = requestId
+    end
+    return payload
 end
 
 return M

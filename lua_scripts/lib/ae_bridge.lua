@@ -43,11 +43,22 @@ end
 function M.collectFilteredItems(bridge, monitorList)
     local result = {}
     for _, id in ipairs(monitorList) do
-        local item = bridge.getItem({name = id})
+        local itemDetail = bridge.getItem({name = id})
         -- 简化写法：如果有 item 取 count，没有取 0
-        result[id] = (item and item.count) or 0
+        result[id] = (itemDetail and itemDetail.count) or 0
     end
     return result
+end
+
+function M.getCraftables(bridge, filter)
+    if not bridge or not bridge.getCraftableItems then return {} end
+    return bridge.getCraftableItems(filter or {}) or {}
+end
+
+function M.craft(bridge, itemId, count)
+    if not bridge or not bridge.craftItem then return false end
+    local filter = {name = itemId, count = count}
+    return bridge.craftItem(filter)
 end
 
 return M
