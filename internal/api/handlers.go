@@ -44,18 +44,22 @@ func HandleMinecraft(c *gin.Context) {
 
 	log.Println("[MC] New Device Connecting...")
 
+	isRegistered := false
+
 	for {
 		var msg model.IncomingMessage
 		if err := ws.ReadJSON(&msg); err != nil {
 			break
 		}
 
-		if msg.ID != "" {
+		if msg.ID != "" && !isRegistered {
 			currentDeviceID = msg.ID
 			s := store.Global
 			s.Mutex.Lock()
 			s.DeviceConns[currentDeviceID] = ws
 			s.Mutex.Unlock()
+			isRegistered = true // 标记已注册，下次跳过
+			log.Printf("[MC] Device Registered: %s", currentDeviceID)
 		}
 
 		clientVersion := parseWhitelistVersion(msg.WhitelistVersion)
@@ -68,9 +72,10 @@ func HandleMinecraft(c *gin.Context) {
 			})
 		}
 
-		if msg.Type == "update" {
-			service.ProcessInventoryUpdate(msg.Data)
-		} else if msg.Type == "production_flow" {
+		switch msg.Type {
+		case "update":
+			service.ProcessInventoryUpdate(msg.ID, msg.Data)
+		case "production_flow":
 			service.ProcessFlowUpdate(msg)
 		}
 	}
@@ -112,12 +117,13 @@ func HandleWeb(c *gin.Context) {
 		// ==========================================
 		// 1. 处理状态更新 (注意：这里不要加全局锁！)
 		// ==========================================
-		if cmd.Action == "stop" {
+		switch cmd.Action {
+		case "stop":
 			// 关机：调用 Service 层的重置函数
 			// 注意：ResetFactoryStats 内部自己会加锁，所以这里绝对不能加 s.Mutex.Lock()，否则死锁！
 			service.ResetFactoryStats(cmd.Target)
 
-		} else if cmd.Action == "start" {
+		case "start":
 			// 开机：简单的状态更新，需要手动加锁
 			s.Mutex.Lock()
 			if factory, exists := s.Factories[cmd.Target]; exists {
@@ -126,9 +132,9 @@ func HandleWeb(c *gin.Context) {
 			s.Mutex.Unlock()
 			// 广播让前端变绿
 			service.BroadcastToWeb()
-		} else if cmd.Action == "update_factory_items" {
+		case "update_factory_items":
 			service.UpdateFactoryItemSettings(cmd.Target, cmd.PrimaryItem, cmd.Items)
-		} else if cmd.Action == "update_factory_name" {
+		case "update_factory_name":
 			service.UpdateFactoryName(cmd.Target, cmd.Name)
 		}
 
@@ -178,32 +184,23 @@ func HandleConfig(c *gin.Context) {
 }
 
 type whitelistUpdateRequest struct {
-	MonitoredItems []string `json:"monitored_items"`
-	Items          []string `json:"items"`
+	Items []string `json:"items"`
 }
 
 func HandleConfigUpdate(c *gin.Context) {
-	body, err := io.ReadAll(c.Request.Body)
+	_, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		c.JSON(400, gin.H{"error": "invalid request body"})
 		return
 	}
 
 	var req whitelistUpdateRequest
-	_ = json.Unmarshal(body, &req)
-
-	items := req.MonitoredItems
-	if len(items) == 0 {
-		items = req.Items
-	}
-	if len(items) == 0 {
-		var list []string
-		if err := json.Unmarshal(body, &list); err == nil {
-			items = list
-		}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": "invalid json"})
+		return
 	}
 
-	version, err := service.UpdateWhitelist(items)
+	version, err := service.UpdateWhitelist(req.Items)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "failed to save whitelist"})
 		return

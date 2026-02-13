@@ -9,61 +9,30 @@ local util = require("util")
 
 local ae_device = nil
 
-local function collectEnergy(bridge)
-    return {
-        energyStored = bridge.getStoredEnergy() or 0,
-        energyMax = bridge.getEnergyCapacity() or 0,
-        energyUsage = bridge.getEnergyUsage() or 0,
-        averageEnergyInput = bridge.getAverageEnergyInput() or 0
-    }
-end
-
-local function collectStorage(bridge)
-    return {
-        itemTotal = bridge.getTotalItemStorage() or 0,
-        itemUsed = bridge.getUsedItemStorage() or 0,
-        itemAvailable = bridge.getAvailableItemStorage() or 0,
-        itemExternalTotal = bridge.getTotalExternalItemStorage() or 0,
-        itemExternalUsed = bridge.getUsedExternalItemStorage() or 0,
-        itemExternalAvailable = bridge.getAvailableExternalItemStorage() or 0,
-        fluidTotal = bridge.getTotalFluidStorage() or 0,
-        fluidUsed = bridge.getUsedFluidStorage() or 0,
-        fluidAvailable = bridge.getAvailableFluidStorage() or 0,
-        fluidExternalTotal = bridge.getTotalExternalFluidStorage() or 0,
-        fluidExternalUsed = bridge.getUsedExternalFluidStorage() or 0,
-        fluidExternalAvailable = bridge.getAvailableExternalFluidStorage() or 0,
-        chemicalTotal = bridge.getTotalChemicalStorage() or 0,
-        chemicalUsed = bridge.getUsedChemicalStorage() or 0,
-        chemicalAvailable = bridge.getAvailableChemicalStorage() or 0,
-        chemicalExternalTotal = bridge.getTotalExternalChemicalStorage() or 0,
-        chemicalExternalUsed = bridge.getUsedExternalChemicalStorage() or 0,
-        chemicalExternalAvailable = bridge.getAvailableExternalChemicalStorage() or 0
-    }
-end
-
-local function buildInventoryPayload(filtered_items, energy, storage, whitelist_version)
-    return packets.inventoryUpdate(
-        config.DEVICE_ID,
-        "Main Storage",
-        true,
-        filtered_items,
-        energy,
-        storage,
-        whitelist_version
-    )
-end
-
 local function sendLoop(ws)
     while true do
         ae_device = aeBridge.ensureBridge(ae_device)
 
-        whitelist.sync(config.API_URL, config.SYNC_INTERVAL)
         if ae_device then
+            -- 1. 采集数据 (全都在 aeBridge 里封装好了)
             local filtered_items = aeBridge.collectFilteredItems(ae_device, whitelist.getList())
-            local energy = collectEnergy(ae_device)
-            local storage = collectStorage(ae_device)
-            local payload = buildInventoryPayload(filtered_items, energy, storage, whitelist.getVersion())
+            local energy = aeBridge.collectEnergy(ae_device)
+            local storage = aeBridge.collectStorage(ae_device)
+            
+            -- 2. 打包发送 (whitelist.getVersion() 放在这里)
+            local payload = packets.inventoryUpdate(
+                config.DEVICE_ID,
+                "Main Storage",
+                true,
+                filtered_items,
+                energy,
+                storage,
+                whitelist.getVersion()
+            )
             util.sendJson(ws, payload)
+            
+            -- 3. 检查同步 (放在发送之后，避免 HTTP 卡顿影响数据上报)
+            whitelist.sync(config.API_URL, config.SYNC_INTERVAL)
         end
 
         util.sleepSeconds(0.5)
@@ -72,32 +41,28 @@ end
 
 local function receiveLoop(ws)
     while true do
-        -- 这是一个阻塞调用，会一直等到服务器发消息过来，不占 CPU
         local msg = ws.receive() 
-        
         if msg then
             local packet = textutils.unserializeJSON(msg)
             if whitelist.handlePacket(packet) then
-                print("Event: Received new config via WebSocket!")
+                print("WS: Config Updated!")
             end
         else
-            -- 连接断开了
-            print("WebSocket disconnected!")
+            print("WS Disconnected")
             break
         end
     end
 end
 
 local function runSession(ws)
+    -- 启动时强制同步一次
     whitelist.sync(config.API_URL, config.SYNC_INTERVAL, true)
-    ae_device = aeBridge.findBridge()
-
-    print("Online.")
+    
+    print("System Online.")
     parallel.waitForAny(
         function() sendLoop(ws) end,
         function() receiveLoop(ws) end
     )
 end
 
--- ================= 主程序 =================
 wsClient.run(config.WS_URL, runSession, config.RECONNECT_DELAY)

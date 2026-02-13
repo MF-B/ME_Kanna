@@ -1,35 +1,24 @@
 local M = {}
 
 function M.inventoryUpdate(deviceId, name, isActive, rawItems, energy, storage, whitelistVersion)
-    local report = {
-        name = name,
-        isActive = isActive,
-        raw_items = rawItems
-    }
-
-    if energy then
-        report.energy = {
-            energyStored = energy.energyStored,
-            energyMax = energy.energyMax,
-            energyUsage = energy.energyUsage,
-            averageEnergyInput = energy.averageEnergyInput
-        }
-    end
-
-    if storage then
-        report.storage = storage
-    end
-
+    -- 直接构建，不搞那些 if energy then ... end 的重复劳动
+    -- 因为 ae_bridge.lua 已经保证了 energy 和 storage 是完整的 table (即使值是0)
     local payload = {
         type = "update",
         id = deviceId,
         data = {
-            [deviceId] = report
-        }
+            name = name,
+            active = isActive, -- 简化 key 为 active
+            items = rawItems,  -- 简化 key 为 items (去掉 raw_)
+            energy = energy,
+            storage = storage
+        },
     }
-    if whitelistVersion ~= nil then
+    
+    if whitelistVersion then
         payload.whitelist_version = whitelistVersion
     end
+    
     return payload
 end
 

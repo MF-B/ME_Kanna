@@ -168,56 +168,47 @@ func ProcessFlowUpdate(msg model.IncomingMessage) {
 }
 
 // ProcessInventoryUpdate 处理 AE 库存 (Hub 分发模式)
-func ProcessInventoryUpdate(data map[string]model.LuaReport) {
+func ProcessInventoryUpdate(deviceID string, report model.LuaReport) {
 	s := store.Global
 	s.Mutex.Lock()
 	defer s.Mutex.Unlock()
 
 	now := time.Now()
 
-	updateSystemEnergy(now, data, s)
-	updateSystemStorage(now, data, s)
-	updateFactories(now, data, s)
+	updateSystemEnergy(now, report, s)
+	updateSystemStorage(now, report, s)
+	updateFactories(now, report, s)
 
 	BroadcastToWeb()
 }
 
-func updateSystemEnergy(now time.Time, data map[string]model.LuaReport, s *store.StateManager) {
-	for _, report := range data {
-		if report.Energy == nil {
-			break
-		}
-		if report.Energy.EnergyMax > 0 {
-			s.SystemStatus.EnergyStored = report.Energy.EnergyStored
-			s.SystemStatus.EnergyMax = report.Energy.EnergyMax
-			s.SystemStatus.EnergyUsage = report.Energy.EnergyUsage
-			s.SystemStatus.AverageEnergyInput = report.Energy.AverageEnergyInput
-			s.SystemStatus.NetEnergyRate = report.Energy.AverageEnergyInput - report.Energy.EnergyUsage
-			s.SystemStatus.LastUpdated = now.Unix()
-		}
-		break
+func updateSystemEnergy(now time.Time, report model.LuaReport, s *store.StateManager) {
+	if report.Energy == nil {
+		return
 	}
-}
-
-func updateSystemStorage(now time.Time, data map[string]model.LuaReport, s *store.StateManager) {
-	for _, report := range data {
-		if report.Storage == nil {
-			break
-		}
-
-		s.SystemStatus.Storage = *report.Storage
+	if report.Energy.EnergyMax > 0 {
+		s.SystemStatus.EnergyStored = report.Energy.EnergyStored
+		s.SystemStatus.EnergyMax = report.Energy.EnergyMax
+		s.SystemStatus.EnergyUsage = report.Energy.EnergyUsage
+		s.SystemStatus.AverageEnergyInput = report.Energy.AverageEnergyInput
+		s.SystemStatus.NetEnergyRate = report.Energy.AverageEnergyInput - report.Energy.EnergyUsage
 		s.SystemStatus.LastUpdated = now.Unix()
-		break
 	}
 }
 
-func updateFactories(now time.Time, data map[string]model.LuaReport, s *store.StateManager) {
-	// 汇总所有来源的库存到临时大仓库
-	globalInventory := make(map[string]int64)
-	for _, report := range data {
-		for item, count := range report.RawItems {
-			globalInventory[item] += count
-		}
+func updateSystemStorage(now time.Time, report model.LuaReport, s *store.StateManager) {
+	if report.Storage == nil {
+		return
+	}
+
+	s.SystemStatus.Storage = *report.Storage
+	s.SystemStatus.LastUpdated = now.Unix()
+}
+
+func updateFactories(now time.Time, report model.LuaReport, s *store.StateManager) {
+	globalInventory := report.RawItems
+	if globalInventory == nil {
+		globalInventory = make(map[string]int64)
 	}
 
 	for factoryID, factory := range s.Factories {

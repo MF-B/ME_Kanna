@@ -32,7 +32,7 @@
                     <div class="energy-header">
                       <div class="energy-title">能量储备</div>
                       <el-tag size="small" effect="dark" :type="energyPercent < 20 ? 'danger' : 'success'">
-                        {{ energyPercent.toFixed(1) }}%
+                        {{ Math.floor(energyPercent) }}%
                       </el-tag>
                     </div>
 
@@ -74,7 +74,7 @@
                     <div class="energy-header">
                       <div class="energy-title">库存总览</div>
                       <el-tag size="small" effect="dark" :type="storagePercent < 80 ? 'success' : 'warning'">
-                        {{ storagePercent.toFixed(1) }}%
+                        {{ Math.floor(storagePercent) }}%
                       </el-tag>
                     </div>
 
@@ -112,19 +112,11 @@
                         <div class="block-title">物品存储</div>
                         <div class="block-row">已用 {{ formatCompact(systemStatus.storage.itemUsed) }} / 总计 {{ formatCompact(systemStatus.storage.itemTotal) }}</div>
                         <div class="block-row muted">外部 {{ formatCompact(systemStatus.storage.itemExternalUsed) }} / {{ formatCompact(systemStatus.storage.itemExternalTotal) }}</div>
-                        <div class="block-row muted">可用 内部 {{ formatCompact(systemStatus.storage.itemAvailable) }} / 外部 {{ formatCompact(systemStatus.storage.itemExternalAvailable) }}</div>
                       </div>
                       <div class="storage-block">
                         <div class="block-title">流体存储</div>
                         <div class="block-row">已用 {{ formatCompact(systemStatus.storage.fluidUsed) }} / 总计 {{ formatCompact(systemStatus.storage.fluidTotal) }}</div>
                         <div class="block-row muted">外部 {{ formatCompact(systemStatus.storage.fluidExternalUsed) }} / {{ formatCompact(systemStatus.storage.fluidExternalTotal) }}</div>
-                        <div class="block-row muted">可用 内部 {{ formatCompact(systemStatus.storage.fluidAvailable) }} / 外部 {{ formatCompact(systemStatus.storage.fluidExternalAvailable) }}</div>
-                      </div>
-                      <div class="storage-block">
-                        <div class="block-title">化学存储</div>
-                        <div class="block-row">已用 {{ formatCompact(systemStatus.storage.chemicalUsed) }} / 总计 {{ formatCompact(systemStatus.storage.chemicalTotal) }}</div>
-                        <div class="block-row muted">外部 {{ formatCompact(systemStatus.storage.chemicalExternalUsed) }} / {{ formatCompact(systemStatus.storage.chemicalExternalTotal) }}</div>
-                        <div class="block-row muted">可用 内部 {{ formatCompact(systemStatus.storage.chemicalAvailable) }} / 外部 {{ formatCompact(systemStatus.storage.chemicalExternalAvailable) }}</div>
                       </div>
                     </div>
                   </el-card>
@@ -191,22 +183,12 @@ const systemStatus = ref({
   storage: {
     itemTotal: 0,
     itemUsed: 0,
-    itemAvailable: 0,
     itemExternalTotal: 0,
     itemExternalUsed: 0,
-    itemExternalAvailable: 0,
     fluidTotal: 0,
     fluidUsed: 0,
-    fluidAvailable: 0,
     fluidExternalTotal: 0,
-    fluidExternalUsed: 0,
-    fluidExternalAvailable: 0,
-    chemicalTotal: 0,
-    chemicalUsed: 0,
-    chemicalAvailable: 0,
-    chemicalExternalTotal: 0,
-    chemicalExternalUsed: 0,
-    chemicalExternalAvailable: 0
+    fluidExternalUsed: 0
   }
 })
 

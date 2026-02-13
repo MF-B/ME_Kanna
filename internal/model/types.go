@@ -32,8 +32,8 @@ type StorageStats struct {
 
 // LuaReport 对应 AE2 发上来的库存快照
 type LuaReport struct {
-	RawItems map[string]int64 `json:"raw_items"`
-	IsActive bool             `json:"isActive"`
+	RawItems map[string]int64 `json:"items"`
+	IsActive bool             `json:"active"`
 	Name     string           `json:"name"`
 	Energy   *EnergyStats     `json:"energy,omitempty"`
 	Storage  *StorageStats    `json:"storage,omitempty"`
@@ -67,13 +67,13 @@ type FactoryItemSetting struct {
 
 // IncomingMessage 统一接收 Lua 消息
 type IncomingMessage struct {
-	Type             string               `json:"type"`
-	Data             map[string]LuaReport `json:"data"`  // AE2 数据
-	ID               string               `json:"id"`    // 海龟 ID
-	Name             string               `json:"name"`  // 海龟名称
-	Delta            int64                `json:"delta"` // 海龟 增量
-	Item             string               `json:"item"`  // 海龟 物品
-	WhitelistVersion json.RawMessage      `json:"whitelist_version"`
+	Type             string          `json:"type"`
+	Data             LuaReport       `json:"data"`
+	ID               string          `json:"id"`
+	Name             string          `json:"name"`
+	Delta            int64           `json:"delta"`
+	Item             string          `json:"item"`
+	WhitelistVersion json.RawMessage `json:"whitelist_version"`
 }
 
 // Command 控制指令

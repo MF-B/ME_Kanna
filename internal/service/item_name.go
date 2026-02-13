@@ -361,8 +361,8 @@ func readResourcePackOrderFromOptions() []string {
 		if entry == "vanilla" || strings.HasPrefix(entry, "fabric") {
 			continue
 		}
-		if strings.HasPrefix(entry, "file/") {
-			entry = strings.TrimPrefix(entry, "file/")
+		if after, ok := strings.CutPrefix(entry, "file/"); ok {
+			entry = after
 		}
 		result = append(result, entry)
 	}
