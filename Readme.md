@@ -5,6 +5,9 @@
 - [ ] 网页下单合成
 
 # 使用方法
+## 使用前
+用iconexport模组导出整合包图标,放入.minecraft/icon-exports-x32文件夹里
+
 ## 前端
 ```bash
 cd mineCCT-web

@@ -6,9 +6,6 @@ import (
 )
 
 func MinecraftDir() string {
-	if dir := os.Getenv("MINECCT_MINECRAFT_DIR"); dir != "" {
-		return dir
-	}
 	wd, err := os.Getwd()
 	if err != nil {
 		return ".minecraft"
@@ -23,6 +20,18 @@ func ModsPath() string {
 // 语言缓存直接放到 .minecraft 下
 func LangCacheDir() string {
 	return filepath.Join(MinecraftDir(), "lang_cache")
+}
+
+func IconExportDir() string {
+	return filepath.Join(MinecraftDir(), "icon-exports-x32")
+}
+
+func ResourcePacksDir() string {
+	return filepath.Join(MinecraftDir(), "resourcepacks")
+}
+
+func OptionsFilePath() string {
+	return filepath.Join(MinecraftDir(), "options.txt")
 }
 
 // 原版资源仓库存放到 .minecraft/vanilla
@@ -54,10 +63,4 @@ type FactoryOverride struct {
 }
 
 // 可选覆盖：不填也能即插即用
-var FactoryRegistry = map[string]FactoryOverride{
-	"iron_farm": {
-		Name:        "刷铁机",
-		Icon:        "minecraft:iron_ingot",
-		PrimaryItem: "minecraft:iron_ingot",
-	},
-}
+var FactoryRegistry = map[string]FactoryOverride{}
