@@ -21,8 +21,9 @@ func main() {
 		c.Next()
 	})
 
-	// 启动后台任务 (清理长期无响应工厂的产率)
-	service.StartBackgroundTasks()
+	if err := service.InitWhitelist(); err != nil {
+		log.Printf("Whitelist init failed: %v", err)
+	}
 
 	// 注册路由 - 全部委托给 api 包处理
 	r.GET("/ws/minecraft", api.HandleMinecraft)
@@ -30,6 +31,8 @@ func main() {
 	r.GET("/icon/:id", api.HandleIcon)
 	r.GET("/item-name/:id", api.HandleItemName)
 	r.GET("/config/whitelist", api.HandleConfig)
+	r.POST("/config/whitelist", api.HandleConfigUpdate)
+	r.PUT("/config/whitelist", api.HandleConfigUpdate)
 
 	r.Static("/lua", "./lua_scripts")
 

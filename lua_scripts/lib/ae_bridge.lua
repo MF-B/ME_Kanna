@@ -18,19 +18,22 @@ function M.ensureBridge(existing)
     return bridge
 end
 
-function M.collectFilteredItems(bridge, isMonitored)
-    local filtered = {}
-    local allItems = bridge.getItems()
+-- 参数说明：
+-- bridge: 外设对象
+-- monitorList: 这是一个纯 ID 列表，例如 {"minecraft:iron_ingot", "ae2:silicon"}
+function M.collectFilteredItems(bridge, monitorList)
+    local result = {}
 
-    for _, item in pairs(allItems) do
-        local count = item.count or 0
-        local name = item.name
-        if name and isMonitored(name) then
-            filtered[name] = (filtered[name] or 0) + count
+    for _, id in ipairs(monitorList) do
+        local item = bridge.getItem({name = id})
+
+        if item then
+            result[id] = item.count or 0
+        else
+            result[id] = 0
         end
     end
-
-    return filtered
+    return result
 end
 
 return M

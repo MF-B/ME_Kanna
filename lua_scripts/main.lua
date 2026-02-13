@@ -41,14 +41,15 @@ local function collectStorage(bridge)
     }
 end
 
-local function buildInventoryPayload(filtered_items, energy, storage)
+local function buildInventoryPayload(filtered_items, energy, storage, whitelist_version)
     return packets.inventoryUpdate(
         config.DEVICE_ID,
         "Main Storage",
         true,
         filtered_items,
         energy,
-        storage
+        storage,
+        whitelist_version
     )
 end
 
@@ -56,31 +57,39 @@ local function sendLoop(ws)
     while true do
         ae_device = aeBridge.ensureBridge(ae_device)
 
+        whitelist.sync(config.API_URL, config.SYNC_INTERVAL)
         if ae_device then
-            if os.clock() - whitelist.lastSync > config.SYNC_INTERVAL then
-                whitelist.sync(config.API_URL)
-            end
-
-            local filtered_items = aeBridge.collectFilteredItems(ae_device, whitelist.isMonitored)
+            local filtered_items = aeBridge.collectFilteredItems(ae_device, whitelist.getList())
             local energy = collectEnergy(ae_device)
             local storage = collectStorage(ae_device)
-            local payload = buildInventoryPayload(filtered_items, energy, storage)
+            local payload = buildInventoryPayload(filtered_items, energy, storage, whitelist.getVersion())
             util.sendJson(ws, payload)
         end
 
-        util.sleepSeconds(5)
+        util.sleepSeconds(0.5)
     end
 end
 
 local function receiveLoop(ws)
     while true do
-        local msg = ws.receive()
-        if not msg then break end
+        -- 这是一个阻塞调用，会一直等到服务器发消息过来，不占 CPU
+        local msg = ws.receive() 
+        
+        if msg then
+            local packet = textutils.unserializeJSON(msg)
+            if whitelist.handlePacket(packet) then
+                print("Event: Received new config via WebSocket!")
+            end
+        else
+            -- 连接断开了
+            print("WebSocket disconnected!")
+            break
+        end
     end
 end
 
 local function runSession(ws)
-    whitelist.sync(config.API_URL)
+    whitelist.sync(config.API_URL, config.SYNC_INTERVAL, true)
     ae_device = aeBridge.findBridge()
 
     print("Online.")

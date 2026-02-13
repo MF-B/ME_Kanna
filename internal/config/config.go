@@ -30,6 +30,10 @@ func ResourcePacksDir() string {
 	return filepath.Join(MinecraftDir(), "resourcepacks")
 }
 
+func WhitelistFilePath() string {
+	return filepath.Join(MinecraftDir(), "whitelist.json")
+}
+
 func OptionsFilePath() string {
 	return filepath.Join(MinecraftDir(), "options.txt")
 }

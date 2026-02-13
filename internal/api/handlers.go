@@ -1,6 +1,9 @@
 package api
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"mineCCT/internal/model"
 	"mineCCT/internal/service"
@@ -15,9 +18,26 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
+func parseWhitelistVersion(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return ""
+	}
+	var str string
+	if err := json.Unmarshal(raw, &str); err == nil {
+		return str
+	}
+	var num float64
+	if err := json.Unmarshal(raw, &num); err == nil {
+		return fmt.Sprintf("%v", num)
+	}
+	return ""
+}
+
 func HandleMinecraft(c *gin.Context) {
 	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil { return }
+	if err != nil {
+		return
+	}
 	defer ws.Close()
 
 	var currentDeviceID string
@@ -26,7 +46,9 @@ func HandleMinecraft(c *gin.Context) {
 
 	for {
 		var msg model.IncomingMessage
-		if err := ws.ReadJSON(&msg); err != nil { break }
+		if err := ws.ReadJSON(&msg); err != nil {
+			break
+		}
 
 		if msg.ID != "" {
 			currentDeviceID = msg.ID
@@ -36,13 +58,23 @@ func HandleMinecraft(c *gin.Context) {
 			s.Mutex.Unlock()
 		}
 
+		clientVersion := parseWhitelistVersion(msg.WhitelistVersion)
+		items, serverVersion := service.GetWhitelistSnapshot()
+		if serverVersion != "" && clientVersion != serverVersion {
+			_ = ws.WriteJSON(gin.H{
+				"type":    "config_sync",
+				"data":    items,
+				"version": serverVersion,
+			})
+		}
+
 		if msg.Type == "update" {
 			service.ProcessInventoryUpdate(msg.Data)
 		} else if msg.Type == "production_flow" {
 			service.ProcessFlowUpdate(msg)
 		}
 	}
-	
+
 	if currentDeviceID != "" {
 		s := store.Global
 		s.Mutex.Lock()
@@ -54,11 +86,13 @@ func HandleMinecraft(c *gin.Context) {
 
 func HandleWeb(c *gin.Context) {
 	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil { return }
+	if err != nil {
+		return
+	}
 	defer ws.Close()
 
 	s := store.Global
-	
+
 	// 注册 Web 客户端
 	s.Mutex.Lock()
 	s.WebClients[ws] = true
@@ -82,7 +116,7 @@ func HandleWeb(c *gin.Context) {
 			// 关机：调用 Service 层的重置函数
 			// 注意：ResetFactoryStats 内部自己会加锁，所以这里绝对不能加 s.Mutex.Lock()，否则死锁！
 			service.ResetFactoryStats(cmd.Target)
-			
+
 		} else if cmd.Action == "start" {
 			// 开机：简单的状态更新，需要手动加锁
 			s.Mutex.Lock()
@@ -134,22 +168,60 @@ func HandleItemName(c *gin.Context) {
 	c.JSON(200, gin.H{"id": fullID, "name": name})
 }
 
-// HandleConfig 动态生成白名单
+// HandleConfig 读取持久化白名单
 func HandleConfig(c *gin.Context) {
-	list := make([]string, 0)
-	seen := make(map[string]bool)
+	items, version, _, err := service.EnsureWhitelistFromFactories()
+	if err != nil {
+		items, version = service.GetWhitelistSnapshot()
+	}
+	c.JSON(200, gin.H{"monitored_items": items, "version": version})
+}
 
+type whitelistUpdateRequest struct {
+	MonitoredItems []string `json:"monitored_items"`
+	Items          []string `json:"items"`
+}
+
+func HandleConfigUpdate(c *gin.Context) {
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	var req whitelistUpdateRequest
+	_ = json.Unmarshal(body, &req)
+
+	items := req.MonitoredItems
+	if len(items) == 0 {
+		items = req.Items
+	}
+	if len(items) == 0 {
+		var list []string
+		if err := json.Unmarshal(body, &list); err == nil {
+			items = list
+		}
+	}
+
+	version, err := service.UpdateWhitelist(items)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "failed to save whitelist"})
+		return
+	}
+
+	updated, _ := service.GetWhitelistSnapshot()
+	payload := gin.H{"type": "config_sync", "data": updated, "version": version}
+
+	connections := make([]*websocket.Conn, 0)
 	s := store.Global
 	s.Mutex.RLock()
-	for _, factory := range s.Factories {
-		for itemID := range factory.Items {
-			if !seen[itemID] {
-				list = append(list, itemID)
-				seen[itemID] = true
-			}
-		}
+	for _, conn := range s.DeviceConns {
+		connections = append(connections, conn)
 	}
 	s.Mutex.RUnlock()
 
-	c.JSON(200, gin.H{"monitored_items": list})
+	for _, conn := range connections {
+		_ = conn.WriteJSON(payload)
+	}
+	c.JSON(200, gin.H{"monitored_items": updated, "version": version})
 }

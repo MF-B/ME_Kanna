@@ -11,68 +11,17 @@ import (
 )
 
 // ========================================================
-// 速率计算相关 (滑动窗口)
+// 速率计算相关 (10 分钟环形桶)
 // ========================================================
 
-type WindowEntry struct {
-	Amount   float64
-	Duration float64
+type RateBucket struct {
+	Minute int64
+	Amount float64
 }
 
-var factoryWindows = make(map[string]map[string][]WindowEntry)
-var lastPacketTimes = make(map[string]map[string]time.Time)
-const WindowSize = 5
+var factoryBuckets = make(map[string]map[string][]RateBucket)
 
-// ========================================================
-// 后台任务
-// ========================================================
-
-func StartBackgroundTasks() {
-	ticker := time.NewTicker(10 * time.Second)
-	go func() {
-		for range ticker.C {
-			checkStaleFactories()
-		}
-	}()
-}
-
-// 清理长期无响应的工厂速率
-func checkStaleFactories() {
-	s := store.Global
-	s.Mutex.Lock()
-	defer s.Mutex.Unlock()
-
-	now := time.Now()
-	hasUpdate := false
-
-	for id, factory := range s.Factories {
-		itemTimes, ok := lastPacketTimes[id]
-		if !ok { continue }
-
-		for itemID, lastTime := range itemTimes {
-			// 超过 3 分钟没收到海龟数据，速率归零
-			if now.Sub(lastTime).Minutes() > 3 {
-				if factory.Items != nil {
-					if item, exists := factory.Items[itemID]; exists && item.ProdRate > 0 {
-						item.ProdRate = 0
-						hasUpdate = true
-					}
-				}
-				if factoryWindows[id] != nil {
-					delete(factoryWindows[id], itemID)
-				}
-				delete(itemTimes, itemID)
-			}
-		}
-
-		if len(itemTimes) == 0 {
-			delete(lastPacketTimes, id)
-		}
-	}
-	if hasUpdate {
-		BroadcastToWeb()
-	}
-}
+const RateBucketCount = 10
 
 // ========================================================
 // 核心处理逻辑
@@ -120,7 +69,7 @@ func ensureFactory(s *store.StateManager, id string, name string) *model.Factory
 	return factory
 }
 
-func ensureFactoryItem(factory *model.FactoryData, itemID string) *model.FactoryItem {
+func ensureFactoryItem(factory *model.FactoryData, itemID string) (*model.FactoryItem, bool) {
 	if factory.Items == nil {
 		factory.Items = make(map[string]*model.FactoryItem)
 	}
@@ -134,61 +83,69 @@ func ensureFactoryItem(factory *model.FactoryData, itemID string) *model.Factory
 				factory.ItemId = itemID
 			}
 		}
+		return item, true
 	}
-	return item
+	return item, false
 }
 
 // ProcessFlowUpdate 处理海龟产能 (仅计算速率)
 func ProcessFlowUpdate(msg model.IncomingMessage) {
 	s := store.Global
 	s.Mutex.Lock()
-	defer s.Mutex.Unlock()
 
 	id := msg.ID
-	if id == "" || msg.Item == "" { return }
+	if id == "" || msg.Item == "" {
+		s.Mutex.Unlock()
+		return
+	}
 
 	factory := ensureFactory(s, id, msg.Name)
 	factory.IsActive = true
-	item := ensureFactoryItem(factory, msg.Item)
+	item, created := ensureFactoryItem(factory, msg.Item)
 
-	// 1. 计算窗口数据
+	var collected []string
+	if created {
+		seen := make(map[string]bool)
+		collected = make([]string, 0)
+		for _, existing := range s.Factories {
+			for itemID := range existing.Items {
+				if itemID == "" || seen[itemID] {
+					continue
+				}
+				seen[itemID] = true
+				collected = append(collected, itemID)
+			}
+		}
+	}
+
+	// 1. 写入当前分钟桶
 	now := time.Now()
-	if lastPacketTimes[id] == nil {
-		lastPacketTimes[id] = make(map[string]time.Time)
+	currentMinute := now.Unix() / 60
+	if factoryBuckets[id] == nil {
+		factoryBuckets[id] = make(map[string][]RateBucket)
 	}
-	lastTime, seenBefore := lastPacketTimes[id][msg.Item]
-	lastPacketTimes[id][msg.Item] = now
-
-	if !seenBefore { return }
-
-	duration := now.Sub(lastTime).Seconds()
-	if duration < 1.0 { return } // 忽略过快的数据抖动
-
-	currentAmount := float64(msg.Delta)
-
-	// 2. 更新滑动窗口
-	entry := WindowEntry{Amount: currentAmount, Duration: duration}
-	if factoryWindows[id] == nil {
-		factoryWindows[id] = make(map[string][]WindowEntry)
+	buckets := factoryBuckets[id][msg.Item]
+	if len(buckets) != RateBucketCount {
+		buckets = make([]RateBucket, RateBucketCount)
 	}
-	window := factoryWindows[id][msg.Item]
-	window = append(window, entry)
-	if len(window) > WindowSize {
-		window = window[1:]
+	index := int(currentMinute % RateBucketCount)
+	bucket := &buckets[index]
+	if bucket.Minute != currentMinute {
+		bucket.Minute = currentMinute
+		bucket.Amount = 0
 	}
-	factoryWindows[id][msg.Item] = window
+	bucket.Amount += float64(msg.Delta)
+	factoryBuckets[id][msg.Item] = buckets
 
-	// 3. 计算平均速率
+	// 2. 计算 10 分钟平均速率
 	var totalAmount float64
-	var totalDuration float64
-	for _, e := range window {
-		totalAmount += e.Amount
-		totalDuration += e.Duration
+	minMinute := currentMinute - (RateBucketCount - 1)
+	for _, b := range buckets {
+		if b.Minute >= minMinute && b.Minute <= currentMinute {
+			totalAmount += b.Amount
+		}
 	}
-
-	if totalDuration > 0 {
-		item.ProdRate = (totalAmount / totalDuration) * 3600.0
-	}
+	item.ProdRate = (totalAmount / float64(RateBucketCount)) * 60.0
 	if factory.PrimaryItem == "" {
 		factory.PrimaryItem = msg.Item
 	}
@@ -198,6 +155,16 @@ func ProcessFlowUpdate(msg model.IncomingMessage) {
 	factory.LastUpdated = now.Unix()
 
 	BroadcastToWeb()
+	s.Mutex.Unlock()
+
+	if len(collected) > 0 {
+		normalized := normalizeWhitelist(collected)
+		newVersion := computeWhitelistHash(normalized)
+		_, currentVersion := GetWhitelistSnapshot()
+		if newVersion != currentVersion {
+			_, _ = UpdateWhitelist(normalized)
+		}
+	}
 }
 
 // ProcessInventoryUpdate 处理 AE 库存 (Hub 分发模式)
@@ -299,9 +266,8 @@ func ResetFactoryStats(id string) {
 	s.Mutex.Lock()
 	defer s.Mutex.Unlock()
 
-	// 1. 清除滑动窗口数据 (防止下次开机时计算错误)
-	delete(factoryWindows, id)
-	delete(lastPacketTimes, id)
+	// 1. 清除环形桶数据 (防止下次开机时计算错误)
+	delete(factoryBuckets, id)
 
 	// 2. 强制归零
 	if factory, exists := s.Factories[id]; exists {
@@ -319,10 +285,10 @@ func ResetFactoryStats(id string) {
 func UpdateFactoryItemSettings(id string, primaryItem string, settings []model.FactoryItemSetting) {
 	s := store.Global
 	s.Mutex.Lock()
-	defer s.Mutex.Unlock()
 
 	factory, exists := s.Factories[id]
 	if !exists {
+		s.Mutex.Unlock()
 		return
 	}
 	if factory.Items == nil {
@@ -348,7 +314,27 @@ func UpdateFactoryItemSettings(id string, primaryItem string, settings []model.F
 		}
 	}
 
+	seen := make(map[string]bool)
+	collected := make([]string, 0)
+	for _, factory := range s.Factories {
+		for itemID := range factory.Items {
+			if itemID == "" || seen[itemID] {
+				continue
+			}
+			seen[itemID] = true
+			collected = append(collected, itemID)
+		}
+	}
+
 	BroadcastToWeb()
+	s.Mutex.Unlock()
+
+	normalized := normalizeWhitelist(collected)
+	newVersion := computeWhitelistHash(normalized)
+	_, currentVersion := GetWhitelistSnapshot()
+	if newVersion != currentVersion {
+		_, _ = UpdateWhitelist(normalized)
+	}
 }
 
 func UpdateFactoryName(id string, name string) {

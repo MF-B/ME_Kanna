@@ -1,6 +1,6 @@
 local M = {}
 
-function M.inventoryUpdate(deviceId, name, isActive, rawItems, energy, storage)
+function M.inventoryUpdate(deviceId, name, isActive, rawItems, energy, storage, whitelistVersion)
     local report = {
         name = name,
         isActive = isActive,
@@ -20,13 +20,17 @@ function M.inventoryUpdate(deviceId, name, isActive, rawItems, energy, storage)
         report.storage = storage
     end
 
-    return {
+    local payload = {
         type = "update",
         id = deviceId,
         data = {
             [deviceId] = report
         }
     }
+    if whitelistVersion ~= nil then
+        payload.whitelist_version = whitelistVersion
+    end
+    return payload
 end
 
 function M.productionFlow(factoryId, factoryName, delta, itemName)
