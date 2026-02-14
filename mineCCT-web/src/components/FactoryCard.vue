@@ -180,10 +180,6 @@ function commitName() {
 const itemsList = computed(() => normalizeItems(props.factory?.items))
 const sortedItems = computed(() => sortItems(itemsList.value))
 
-watch(itemsList, (itemList) => {
-  itemList.forEach((factoryItem) => ensureName(factoryItem.itemId))
-}, { immediate: true })
-
 const visibleItems = computed(() => {
   const visibleItemList = sortedItems.value.filter((factoryItem) => factoryItem.visible)
   return visibleItemList
@@ -214,8 +210,7 @@ function sortItems(itemList) {
 }
 
 function getItemName(itemId) {
-  ensureName(itemId)
-  return itemNames.value[itemId] || itemId
+  return itemNames[itemId] || itemId
 }
 
 function commitSettings() {

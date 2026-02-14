@@ -77,6 +77,7 @@ export const useSystemStore = defineStore('system', () => {
     detailVisible.value = !!value
     if (!detailVisible.value) {
       detailTask.value = null
+      detailSaving.value = false
     }
   }
 
@@ -112,12 +113,32 @@ export const useSystemStore = defineStore('system', () => {
 
   function applyUpdatePayload(payload) {
     if (payload.type !== 'update') return
+    
+    // 1. 更新基础数据
     factories.value = payload.data || []
     if (payload.system) {
       systemStatus.value = payload.system
     }
 
-    // 优化 inventoryIndex：优先使用 system.inventory，否则从 factories 计算
+    // 2. 批量预取 itemId 名称（去重）
+    const itemIdsToFetch = new Set()
+    
+    // 从工厂产物中收集
+    factories.value.forEach(f => {
+      if (f.items) {
+        Object.keys(f.items).forEach(id => itemIdsToFetch.add(id))
+      }
+    })
+    
+    // 从系统库存中收集
+    if (payload.system?.inventory) {
+      Object.keys(payload.system.inventory).forEach(id => itemIdsToFetch.add(id))
+    }
+    
+    // 执行预取
+    itemIdsToFetch.forEach(id => ensureName(id))
+
+    // 3. 优化 inventoryIndex：优先使用 system.inventory，否则从 factories 计算
     const systemInventory = payload.system?.inventory
     if (systemInventory && Object.keys(systemInventory).length > 0) {
       inventoryIndex.value = systemInventory
@@ -211,8 +232,7 @@ export const useSystemStore = defineStore('system', () => {
 
   function displayItemName(itemId, fallbackName) {
     if (!itemId) return fallbackName || ''
-    ensureName(itemId)
-    return itemNameMap.value[itemId] || fallbackName || itemId
+    return itemNameMap[itemId] || fallbackName || itemId
   }
 
   const filteredCraftables = computed(() => {
@@ -226,6 +246,7 @@ export const useSystemStore = defineStore('system', () => {
   })
 
   async function fetchCraftables() {
+    if (craftablesLoading.value) return
     craftablesLoading.value = true
     const abortController = new AbortController()
     const timeoutId = setTimeout(() => abortController.abort(), 8000)
@@ -245,9 +266,7 @@ export const useSystemStore = defineStore('system', () => {
         }
       }).filter((craftableEntry) => craftableEntry.itemId)
 
-      craftables.value.forEach((craftableEntry) => {
-        ensureName(craftableEntry.itemId)
-      })
+      // 在批量预取中已经处理了数据流入，这里不再分散触发 ensureName
     } catch (err) {
       craftables.value = []
       if (err?.name === 'AbortError') {
@@ -289,7 +308,9 @@ export const useSystemStore = defineStore('system', () => {
     minThreshold.value = defaultMinThreshold
     maxThreshold.value = defaultMaxThreshold
     recipeTree.value = null
-    fetchCraftables()
+
+    // 触发首次加载，但不要在这里抛出未处理异常（UI 上也提供了手动“刷新”按钮）
+    fetchCraftables().catch(() => {})
   }
 
   function closeWizard() {

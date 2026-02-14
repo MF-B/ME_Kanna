@@ -5,6 +5,29 @@ export function useWebSocket({ onUpdate, onOpen, onClose, reconnectDelay = 3000 
   let socket = null
   let reconnectTimer = null
 
+  // 批处理：将同一帧内收到的多条消息合并，只向上游派发最后一条
+  let pendingPayload = null
+  let flushScheduled = false
+
+  function flushPending() {
+    flushScheduled = false
+    const payload = pendingPayload
+    pendingPayload = null
+    if (payload && onUpdate) onUpdate(payload)
+  }
+
+  function scheduleFlush(payload) {
+    pendingPayload = payload
+    if (flushScheduled) return
+    flushScheduled = true
+
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(flushPending)
+    } else {
+      setTimeout(flushPending, 0)
+    }
+  }
+
   function getWsUrl() {
     let host = window.location.hostname
     if (host.includes(':') && !host.startsWith('[')) {
@@ -57,7 +80,7 @@ export function useWebSocket({ onUpdate, onOpen, onClose, reconnectDelay = 3000 
     socket.onmessage = (event) => {
       try {
         const payload = JSON.parse(event.data)
-        if (onUpdate) onUpdate(payload)
+        scheduleFlush(payload)
       } catch (_error) {
       }
     }
