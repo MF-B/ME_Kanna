@@ -46,45 +46,7 @@
           </el-tab-pane>
 
           <el-tab-pane label="库存控制" name="inventory-control">
-            <AutoCraftPanel
-              :auto-craft-tasks="autoCraftTasks"
-              :inventory-index="inventoryIndex"
-              :task-index="taskIndex"
-              :format-compact="formatCompact"
-              :display-item-name="displayItemName"
-              :wizard-visible="wizardVisible"
-              :wizard-step="wizardStep"
-              :craftables-loading="craftablesLoading"
-              :craftable-query="craftableQuery"
-              :selected-craftable="selectedCraftable"
-              :filtered-craftables="filteredCraftables"
-              :min-threshold="minThreshold"
-              :max-threshold="maxThreshold"
-              :recipe-loading="recipeLoading"
-              :detail-visible="detailVisible"
-              :detail-task="detailTask"
-              :detail-min-threshold="detailMinThreshold"
-              :detail-max-threshold="detailMaxThreshold"
-              :detail-saving="detailSaving"
-              :open-wizard="openWizard"
-              :close-wizard="closeWizard"
-              :fetch-craftables="fetchCraftables"
-              :select-craftable="selectCraftable"
-              :prev-wizard-step="prevWizardStep"
-              :next-wizard-step="nextWizardStep"
-              :finish-wizard="finishWizard"
-              :open-task-detail="openTaskDetail"
-              :save-task-thresholds="saveTaskThresholds"
-              :handle-task-active-change="handleTaskActiveChange"
-              :delete-task="deleteTask"
-              @update:wizard-visible="wizardVisible = $event"
-              @update:craftable-query="craftableQuery = $event"
-              @update:min-threshold="minThreshold = $event"
-              @update:max-threshold="maxThreshold = $event"
-              @update:detail-visible="detailVisible = $event"
-              @update:detail-min-threshold="detailMinThreshold = $event"
-              @update:detail-max-threshold="detailMaxThreshold = $event"
-            />
+            <AutoCraftPanel />
           </el-tab-pane>
         </el-tabs>
       </main>
@@ -100,29 +62,17 @@ import { ElMessage } from 'element-plus'
 import SystemOverview from './components/Dashboard/SystemOverview.vue'
 import FactoryPanel from './components/Inventory/FactoryPanel.vue'
 import AutoCraftPanel from './components/AutoCraft/AutoCraftPanel.vue'
-import { useSystemData } from './composables/useSystemData'
+import { storeToRefs } from 'pinia'
+import { useSystemStore } from './stores/systemStore'
 import { useWebSocket } from './composables/useWebSocket'
 
 const activeTab = ref('monitor')
+
+const systemStore = useSystemStore()
+
 const {
   factories,
-  autoCraftTasks,
-  wizardVisible,
-  wizardStep,
-  craftablesLoading,
-  craftableQuery,
-  selectedCraftable,
-  minThreshold,
-  maxThreshold,
-  recipeLoading,
-  detailVisible,
-  detailTask,
-  detailMinThreshold,
-  detailMaxThreshold,
-  detailSaving,
   systemStatus,
-  inventoryIndex,
-  taskIndex,
   energyPercent,
   energyColor,
   storagePercent,
@@ -132,32 +82,22 @@ const {
   storageExternalRatio,
   storageInternalUsage,
   storageExternalUsage,
-  netRateClass,
-  filteredCraftables,
+  netRateClass
+} = storeToRefs(systemStore)
+
+const {
   formatCompact,
   formatRate,
   formatTime,
   applyUpdatePayload,
-  loadAutoCraftTasks,
-  openWizard,
-  closeWizard,
-  selectCraftable,
-  prevWizardStep,
-  nextWizardStep,
-  finishWizard,
-  openTaskDetail,
-  saveTaskThresholds,
-  deleteTask,
-  handleTaskActiveChange,
-  displayItemName,
-  fetchCraftables
-} = useSystemData()
+  loadAutoCraftTasks
+} = systemStore
 
 const { connected, connect, send } = useWebSocket({
   onUpdate: applyUpdatePayload,
   onOpen: () => ElMessage.success('已连接到控制中心'),
   onClose: () => {
-    factories.value = []
+    systemStore.resetFactories()
   }
 })
 
@@ -169,10 +109,14 @@ const handleCommand = (payload) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   document.documentElement.classList.add('dark')
   connect()
-  loadAutoCraftTasks()
+  try {
+    await loadAutoCraftTasks()
+  } catch (err) {
+    ElMessage.error(err.message || '加载自动合成任务失败')
+  }
 })
 </script>
 
@@ -236,6 +180,7 @@ h1 {
   font-size: 1.8rem;
   background: linear-gradient(90deg, #409eff, #67c23a);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   text-transform: uppercase;
   letter-spacing: 2px;

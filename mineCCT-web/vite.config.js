@@ -19,5 +19,16 @@ export default defineConfig({
     host: '::', // 监听所有网卡
     port: 5173,      // 指定端口
     allowedHosts: true,
+    },
+  build: {
+  rollupOptions: {
+    output: {
+      manualChunks: {
+        vue: ['vue'],
+        'element-plus': ['element-plus', '@element-plus/icons-vue'],
+        echarts: ['echarts']
+      }
+    }
   }
+}
 })

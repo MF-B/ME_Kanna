@@ -39,12 +39,12 @@
               inline-prompt
               active-text="ON"
               inactive-text="OFF"
-              @change="(value) => handleTaskActiveChange(task, value)"
+              @change="(value) => onActiveChange(task, value)"
               @click.stop
             />
             <div class="autocraft-actions">
               <span class="autocraft-footer-hint">点击编辑阈值</span>
-              <el-button link type="danger" @click.stop="deleteTask(task.itemId)">删除</el-button>
+              <el-button link type="danger" @click.stop="handleDeleteTask(task.itemId)">删除</el-button>
             </div>
           </div>
         </el-card>
@@ -83,7 +83,7 @@
       <div class="wizard-body" v-if="wizardStep === 1">
         <div class="wizard-toolbar">
           <el-input :model-value="craftableQuery" @update:model-value="updateCraftableQuery" placeholder="搜索可合成物品" clearable />
-          <el-button :loading="craftablesLoading" @click="fetchCraftables">刷新</el-button>
+          <el-button :loading="craftablesLoading" @click="handleFetchCraftables">刷新</el-button>
         </div>
         <div class="craftable-list">
           <el-scrollbar height="280px">
@@ -141,7 +141,7 @@
             v-if="wizardStep === 2"
             type="primary"
             :loading="recipeLoading"
-            @click="finishWizard"
+            @click="handleFinishWizard"
           >
             创建任务
           </el-button>
@@ -184,7 +184,7 @@
         </div>
 
         <div class="detail-actions">
-          <el-button type="primary" :loading="detailSaving" @click="saveTaskThresholds">保存阈值</el-button>
+          <el-button type="primary" :loading="detailSaving" @click="handleSaveTaskThresholds">保存阈值</el-button>
         </div>
       </div>
 
@@ -201,77 +201,126 @@
 </template>
 
 <script setup>
+import { storeToRefs } from 'pinia'
+import { ElMessage } from 'element-plus'
+import { useSystemStore } from '../../stores/systemStore'
 import ItemIcon from '../ItemIcon.vue'
 import AutoCraftTree from '../AutoCraftTree.vue'
 
-defineProps({
-  autoCraftTasks: { type: Array, required: true },
-  inventoryIndex: { type: Object, required: true },
-  taskIndex: { type: Object, required: true },
-  formatCompact: { type: Function, required: true },
-  displayItemName: { type: Function, required: true },
-  wizardVisible: { type: Boolean, required: true },
-  wizardStep: { type: Number, required: true },
-  craftablesLoading: { type: Boolean, required: true },
-  craftableQuery: { type: String, required: true },
-  selectedCraftable: { type: Object, default: null },
-  filteredCraftables: { type: Array, required: true },
-  minThreshold: { type: Number, required: true },
-  maxThreshold: { type: Number, required: true },
-  recipeLoading: { type: Boolean, required: true },
-  detailVisible: { type: Boolean, required: true },
-  detailTask: { type: Object, default: null },
-  detailMinThreshold: { type: Number, required: true },
-  detailMaxThreshold: { type: Number, required: true },
-  detailSaving: { type: Boolean, required: true },
-  openWizard: { type: Function, required: true },
-  closeWizard: { type: Function, required: true },
-  fetchCraftables: { type: Function, required: true },
-  selectCraftable: { type: Function, required: true },
-  prevWizardStep: { type: Function, required: true },
-  nextWizardStep: { type: Function, required: true },
-  finishWizard: { type: Function, required: true },
-  openTaskDetail: { type: Function, required: true },
-  saveTaskThresholds: { type: Function, required: true },
-  handleTaskActiveChange: { type: Function, required: true },
-  deleteTask: { type: Function, required: true }
-})
+const systemStore = useSystemStore()
 
-const emit = defineEmits([
-  'update:wizardVisible',
-  'update:craftableQuery',
-  'update:minThreshold',
-  'update:maxThreshold',
-  'update:detailVisible',
-  'update:detailMinThreshold',
-  'update:detailMaxThreshold'
-])
+// 使用 storeToRefs 获取响应式状态
+const {
+  autoCraftTasks,
+  inventoryIndex,
+  taskIndex,
+  wizardVisible,
+  wizardStep,
+  craftablesLoading,
+  craftableQuery,
+  selectedCraftable,
+  filteredCraftables,
+  minThreshold,
+  maxThreshold,
+  recipeLoading,
+  detailVisible,
+  detailTask,
+  detailMinThreshold,
+  detailMaxThreshold,
+  detailSaving
+} = storeToRefs(systemStore)
+
+// 直接从 store 获取方法，引用极其稳定
+const {
+  formatCompact,
+  displayItemName,
+  openWizard,
+  closeWizard,
+  selectCraftable,
+  prevWizardStep,
+  nextWizardStep,
+  openTaskDetail,
+  setWizardVisible,
+  setCraftableQuery,
+  setMinThreshold,
+  setMaxThreshold,
+  setDetailVisible,
+  setDetailMinThreshold,
+  setDetailMaxThreshold,
+  saveTaskThresholds: _saveTaskThresholds,
+  deleteTask: _deleteTask,
+  handleTaskActiveChange: _handleTaskActiveChange,
+  fetchCraftables: _fetchCraftables,
+  finishWizard: _finishWizard
+} = systemStore
+
+async function handleFetchCraftables() {
+  try {
+    await _fetchCraftables()
+  } catch (err) {
+    ElMessage.error(err.message || '刷新列表失败')
+  }
+}
+
+async function handleFinishWizard() {
+  try {
+    await _finishWizard()
+  } catch (err) {
+    ElMessage.error(err.message || '创建任务失败')
+  }
+}
+
+async function handleSaveTaskThresholds() {
+  try {
+    await _saveTaskThresholds()
+    ElMessage.success('阈值已更新')
+  } catch (err) {
+    ElMessage.error(err.message || '保存失败')
+  }
+}
+
+async function handleDeleteTask(itemId) {
+  try {
+    await _deleteTask(itemId)
+    ElMessage.success('任务已删除')
+  } catch (err) {
+    ElMessage.error(err.message || '删除失败')
+  }
+}
+
+async function onActiveChange(task, value) {
+  try {
+    await _handleTaskActiveChange(task, value)
+  } catch (err) {
+    ElMessage.error(err.message || '更新状态失败')
+  }
+}
 
 function updateCraftableQuery(value) {
-  emit('update:craftableQuery', value)
+  setCraftableQuery(value)
 }
 
 function updateMinThreshold(value) {
-  emit('update:minThreshold', value)
+  setMinThreshold(value)
 }
 
 function updateMaxThreshold(value) {
-  emit('update:maxThreshold', value)
+  setMaxThreshold(value)
 }
 
 function updateDetailMinThreshold(value) {
-  emit('update:detailMinThreshold', value)
+  setDetailMinThreshold(value)
 }
 
 function updateDetailMaxThreshold(value) {
-  emit('update:detailMaxThreshold', value)
+  setDetailMaxThreshold(value)
 }
 
 function updateWizardVisible(value) {
-  emit('update:wizardVisible', value)
+  setWizardVisible(value)
 }
 
 function updateDetailVisible(value) {
-  emit('update:detailVisible', value)
+  setDetailVisible(value)
 }
 </script>
