@@ -1,4 +1,4 @@
-/* AE2 & Modern Minecraft GUI Theme - high contrast & depth */
+/* AE2 & Modern Minecraft GUI Theme - Authentic Flat Pixel Edition */
 @font-face {
   font-family: 'zpix';
   src: url('./fonts/zpix.ttf') format('truetype');
@@ -7,133 +7,105 @@
 }
 
 :root {
-  /* AE2 调色板 - 深度校准对比度 */
-  --ae2-bg: #8b8b8b;           /* 槽位背景 */
-  --ae2-bg-panel: #ced4e5;     /* 面板背景 (浅灰蓝) */
-  --ae2-bg-header: #ced4e5;    
-  --ae2-border-light: #ffffff; /* 亮边 (左上) */
-  --ae2-border-dark: #373737;  /* 边框轮廓 */
-  --ae2-border-shadow: #555555;/* 暗边 (右下投影) */
+  /* AE2 调色板 - 完全对齐截图，无纯黑，采用工业灰蓝 */
+  --ae2-bg-panel: #ced4e5;     /* 面板主背景 */
+  --ae2-bg-sidebar: #bbbbbb;   /* 侧边栏背景 */
+  --ae2-bg-slot: #8b8b8b;      /* 槽位/输入框背景 */
+  --ae2-border-outline: #373737; /* 像素边缘轮廓 */
+  --ae2-border-light: #ffffff; /* 选中/悬停高亮 */
   --ae2-purple: #8e54e9;       
-  --ae2-purple-glow: rgba(142, 84, 233, 0.6);
   --ae2-text: #3f3f3f;         
   
   --el-color-primary: var(--ae2-purple);
   --el-border-radius-base: 0px; 
+  --el-font-family: 'zpix', sans-serif;
 }
 
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
-  font-family: 'zpix', sans-serif;
+  font-family: var(--el-font-family) !important;
   image-rendering: pixelated;
+  border-radius: 0 !important;
+  transition: none !important; /* 移除所有平滑动画 */
 }
 
 body {
   margin: 0;
-  min-height: 100vh;
-  background-color: #1a1a1a; 
-  background-image: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8));
+  height: 100vh;
+  /* 背景改为中灰色，消除黑色边缘感 */
+  background-color: #555555; 
+  background-image: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2));
   overflow: hidden;
 }
 
-/* --- MC 核心光影戏法 --- */
-
-/* 外凸面板 */
-.mc-panel, .el-card, .el-dialog {
-  background: var(--ae2-bg-panel) !important;
-  border: 2px solid var(--ae2-border-dark) !important;
-  box-shadow: 
-    inset 2px 2px 0px var(--ae2-border-light),
-    inset -2px -2px 0px var(--ae2-border-shadow) !important;
-  border-radius: 0 !important;
-}
-
-/* 内凹槽位 */
-.mc-slot, .ae2-slot-row, .ae2-slot-cell, .energy-stat, .el-input__wrapper {
-  background: var(--ae2-bg) !important;
-  border: 2px solid var(--ae2-border-dark) !important;
-  box-shadow: 
-    inset 2px 2px 0px #373737,
-    1px 1px 0px var(--ae2-border-light) !important;
-  border-radius: 0 !important;
-}
-
-/* --- 侧边栏布局 --- */
+/* --- 核心容器：消除黑框 --- */
 .ae2-sidebar-container {
   display: flex;
   width: 100vw;
   height: 100vh;
-  background: #1a1a1a;
+  background: var(--ae2-bg-panel); /* 同步主背景，消除缝隙黑影 */
 }
 
 .ae2-sidebar {
   width: 64px;
   flex-shrink: 0;
-  background: #bbbbbb;
-  border-right: 2px solid var(--ae2-border-dark);
+  background: var(--ae2-bg-sidebar);
+  border-right: 2px solid var(--ae2-border-outline);
   display: flex;
   flex-direction: column;
   padding: 8px 4px;
   gap: 8px;
-  box-shadow: inset -2px 0 0 #555, inset 2px 0 0 #ffffff;
-}
-
-.ae2-side-button {
-  width: 52px;
-  height: 52px;
-  flex-shrink: 0;
-  background: #aaaaaa !important;
-  border: 2px solid var(--ae2-border-dark) !important;
-  box-shadow: inset 2px 2px 0px #ffffff, inset -2px -2px 0px #555555 !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.ae2-side-button.is-active {
-  background: var(--ae2-purple) !important;
-  border-color: #ffffff !important;
-  box-shadow: 
-    inset 2px 2px 0px rgba(255,255,255,0.5),
-    0 0 10px var(--ae2-purple-glow) !important;
 }
 
 .ae2-main-content {
   flex: 1;
-  padding: 8px;
+  background: var(--ae2-bg-panel);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.dashboard-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+/* --- 扁平化面板与卡片 --- */
+.mc-panel, .el-card, .el-dialog {
+  background: var(--ae2-bg-panel) !important;
+  border: 2px solid var(--ae2-border-outline) !important;
+  box-shadow: none !important;
 }
 
-/* 窄版顶栏 */
+/* 槽位与统计块：扁平内凹效果 */
+.mc-slot, .ae2-slot-row, .ae2-slot-cell, .energy-stat, .el-input__wrapper, .storage-block {
+  background: var(--ae2-bg-slot) !important;
+  border: 2px solid var(--ae2-border-outline) !important;
+  box-shadow: none !important;
+}
+
+/* --- 顶栏重构：窄版且整合 ONLINE --- */
 .dashboard-header {
   padding: 4px 12px;
-  background: #bbbbbb;
-  border-bottom: 2px solid var(--ae2-border-dark);
-  box-shadow: inset 0 1px 0 #ffffff;
+  background: var(--ae2-bg-panel);
+  border-bottom: 2px solid var(--ae2-border-outline);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  min-height: 32px;
-  flex-shrink: 0;
+  min-height: 28px;
 }
 
-.dashboard-header h1 {
-  font-size: 0.9rem;
+.dashboard-header h1, .header-title {
+  font-size: 0.85rem;
+  font-weight: bold;
   margin: 0;
   color: var(--ae2-text);
-  text-shadow: 1px 1px 0px #ffffff;
+  display: flex;
+  align-items: center;
 }
+
+.status-text {
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+.status-text.online { color: #2e7d32; }
+.status-text.offline { color: #c62828; }
 
 .content-viewport {
   flex: 1;
@@ -141,15 +113,54 @@ body {
   padding: 12px;
 }
 
-/* 进度条 */
+/* --- 按钮：模仿 AE2 截图的平整方块 --- */
+.el-button, .ae2-side-button {
+  border: 2px solid var(--ae2-border-outline) !important;
+  background: #aaaaaa !important;
+  color: #373737 !important;
+  padding: 4px 12px !important;
+  box-shadow: none !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.el-button:hover, .ae2-side-button:hover {
+  background: #bbbbbb !important;
+  outline: 2px solid #ffffff; /* 悬停时显示像素白框 */
+}
+
+.ae2-side-button {
+  width: 52px;
+  height: 52px;
+  padding: 0 !important;
+}
+
+.ae2-side-button.is-active {
+  background: var(--ae2-purple) !important;
+  border-color: var(--ae2-border-outline) !important;
+  outline: 2px solid #ffffff;
+}
+
+.el-button--primary {
+  background: var(--ae2-purple) !important;
+  color: white !important;
+}
+
+/* --- 进度条像素化 --- */
 .el-progress-bar__outer {
-  background-color: #373737 !important;
-  border: 2px solid var(--ae2-border-dark) !important;
-  box-shadow: 1px 1px 0px var(--ae2-border-light) !important;
-  border-radius: 0px !important;
+  background-color: var(--ae2-bg-slot) !important;
+  border: 2px solid var(--ae2-border-outline) !important;
+  height: 12px !important;
+}
+
+.el-progress-bar__inner {
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 
 /* 滚动条 */
 ::-webkit-scrollbar { width: 10px; }
-::-webkit-scrollbar-track { background: #555; }
-::-webkit-scrollbar-thumb { background: #aaaaaa; border: 2px solid var(--ae2-border-dark); }
+::-webkit-scrollbar-track { background: var(--ae2-bg-sidebar); }
+::-webkit-scrollbar-thumb { background: #888888; border: 2px solid var(--ae2-border-outline); }
