@@ -1,4 +1,4 @@
-/* AE2 & Modern Minecraft GUI Theme - High Contrast Edition */
+/* AE2 & Modern Minecraft GUI Theme - High Contrast & Depth Edition */
 @font-face {
   font-family: 'zpix';
   src: url('./fonts/zpix.ttf') format('truetype');
@@ -7,30 +7,23 @@
 }
 
 :root {
-  /* AE2 调色板 - 完全参考截图进行高对比度优化 */
-  --ae2-bg: #8b8b8b;           /* 基础灰色 (槽位/按钮背景) */
-  --ae2-bg-panel: #ced4e5;     /* 面板主色 - 浅灰蓝 (背景面板) */
-  --ae2-bg-darker: #373737;    /* 槽位深色/投影 (内凹阴影) */
+  /* AE2 调色板 - 完全参考截图 */
+  --ae2-bg: #8b8b8b;           
+  --ae2-bg-panel: #ced4e5;     
+  --ae2-bg-darker: #373737;    
   --ae2-bg-header: #ced4e5;    
-  --ae2-border-light: #ffffff; /* 像素亮边 (外凸/高光) */
-  --ae2-border-dark: #373737;  /* 像素暗边 (轮廓/深度) */
+  --ae2-border-light: #ffffff; 
+  --ae2-border-dark: #373737;  
+  --ae2-border-shadow: #555555;
   --ae2-purple: #8e54e9;       
   --ae2-purple-glow: rgba(142, 84, 233, 0.6);
   --ae2-blue: #548ce9;         
-  --ae2-text: #3f3f3f;         /* 经典 MC 深灰字 */
+  --ae2-text: #3f3f3f;         
   
-  /* 全局变量覆盖 */
-  --color-background: var(--ae2-bg-panel);
-  --color-text: var(--ae2-text);
-  --color-border: var(--ae2-border-dark);
-  
-  /* ElementPlus 变量覆盖 */
   --el-color-primary: var(--ae2-purple);
   --el-border-radius-base: 0px; 
   --el-font-family: 'zpix', 'Helvetica Neue', sans-serif;
   --el-bg-color: var(--ae2-bg-panel);
-  --el-text-color-primary: var(--ae2-text);
-  --el-border-color: var(--ae2-border-dark);
 }
 
 *, *::before, *::after {
@@ -51,27 +44,34 @@ body {
   overflow: hidden;
 }
 
-/* --- MC 核心装饰类 --- */
+/* --- MC 核心光影戏法：左上亮，右下暗 --- */
 
-.mc-panel {
-  background: var(--ae2-bg-panel);
-  border: 2px solid var(--ae2-border-dark);
+/* 外凸面板 (Panel) */
+.mc-panel, .el-card, .el-dialog {
+  background: var(--ae2-bg-panel) !important;
+  border: 2px solid var(--ae2-border-dark) !important;
+  /* 外部投影 + 内部亮边(左上) + 内部暗边(右下) */
   box-shadow: 
     inset 2px 2px 0px var(--ae2-border-light),
-    inset -2px -2px 0px #555555;
+    inset -2px -2px 0px var(--ae2-border-shadow) !important;
   position: relative;
+  border-radius: 0 !important;
 }
 
-.mc-slot {
-  background: var(--ae2-bg);
-  border: 2px solid var(--ae2-border-dark);
-  box-shadow: inset 3px 3px 0px #373737;
+/* 内凹槽位 (Slot) */
+.mc-slot, .ae2-slot-row, .ae2-slot-cell, .energy-stat, .el-input__wrapper {
+  background: var(--ae2-bg) !important;
+  border: 2px solid var(--ae2-border-dark) !important;
+  /* 槽位光影反转：左上暗，右下亮 */
+  box-shadow: 
+    inset 2px 2px 0px #373737,
+    1px 1px 0px var(--ae2-border-light) !important;
   display: flex;
   align-items: center;
-  justify-content: center;
+  border-radius: 0 !important;
 }
 
-/* --- ElementPlus 全局覆盖 --- */
+/* --- 统一 UI 元素 --- */
 
 .el-button {
   border: 2px solid var(--ae2-border-dark) !important;
@@ -84,181 +84,37 @@ body {
   border-radius: 0 !important;
 }
 
-.el-button:hover {
-  background: #bbbbbb !important;
-  border-color: #ffffff !important;
-}
-
-.el-button--primary {
-  background: var(--ae2-purple) !important;
-  color: white !important;
-  text-shadow: 1px 1px 0px #3f3f3f;
-}
-
-.el-dialog {
-  background: var(--ae2-bg-panel) !important;
-  border: 2px solid var(--ae2-border-dark) !important;
-  padding: 0 !important;
+.el-button:active {
   box-shadow: 
-    inset 2px 2px 0px var(--ae2-border-light),
-    inset -2px -2px 0px #555555,
-    20px 20px 0px rgba(0,0,0,0.4) !important;
+    inset 2px 2px 0px #555555,
+    inset -2px -2px 0px #ffffff !important;
 }
 
-.el-dialog__header {
-  background: #bbbbbb;
-  padding: 8px 15px !important;
-  margin-right: 0 !important;
-  border-bottom: 2px solid var(--ae2-border-dark);
-}
-
-.el-input__wrapper, .el-input-number {
-  background: #d9dceb !important;
-  box-shadow: inset 2px 2px 0px #9aa0b5, inset -2px -2px 0px #ffffff !important;
+/* 进度条统一 */
+.el-progress-bar__outer {
+  background-color: #373737 !important;
   border: 2px solid var(--ae2-border-dark) !important;
+  box-shadow: 1px 1px 0px var(--ae2-border-light) !important;
+  border-radius: 0px !important;
 }
 
-.el-input__inner {
-  color: #333 !important;
-  font-weight: bold !important;
-}
-
-/* --- AE2 专用组件样式 --- */
-
-.ae2-sidebar-container {
-  display: flex;
-  height: 100vh;
-  width: 100vw;
-  background: #1a1a1a;
-}
-
+/* 侧边栏 */
 .ae2-sidebar {
   width: 64px;
   background: #bbbbbb;
   border-right: 2px solid var(--ae2-border-dark);
-  display: flex;
-  flex-direction: column;
-  padding: 8px 4px;
-  gap: 8px;
-  box-shadow: inset -2px 0 0 #555;
+  box-shadow: inset -2px 0 0 #555, inset 2px 0 0 #ffffff;
 }
 
-.ae2-side-button {
-  width: 52px;
-  height: 52px;
-  background: #aaaaaa !important;
-  border: 2px solid var(--ae2-border-dark) !important;
-  box-shadow: inset 2px 2px 0px #ffffff !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.ae2-side-button.is-active {
-  background: var(--ae2-purple) !important;
-  border-color: #ffffff !important;
-  box-shadow: 
-    inset 2px 2px 0px rgba(255,255,255,0.5),
-    0 0 10px var(--ae2-purple-glow) !important;
-}
-
-.ae2-main-content {
-  flex: 1;
-  padding: 8px;
-}
-
-.dashboard-main {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.dashboard-header {
-  padding: 6px 15px;
+.ae2-header-bar {
   background: #ced4e5;
   border-bottom: 2px solid var(--ae2-border-dark);
   box-shadow: inset 0 1px 0 #ffffff;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  min-height: 36px;
+  margin: -12px -12px 12px -12px;
+  padding: 6px 12px;
 }
 
-.dashboard-header .header-title {
-  font-size: 1rem;
-  font-weight: bold;
-  color: #3f3f3f;
-  text-shadow: 1px 1px 0px #ffffff;
-}
-
-.dashboard-header .status-text {
-  font-size: 0.85rem;
-  font-weight: bold;
-  color: #c62828;
-}
-
-.dashboard-header .status-text.online {
-  color: #2e7d32;
-}
-
-.content-viewport {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px;
-}
-
-.ae2-slot-row {
-  background: #8b8b8b;
-  border: 2px solid var(--ae2-border-dark);
-  box-shadow: 
-    inset 2px 2px 0px #373737,
-    1px 1px 0px #ffffff;
-  padding: 4px 10px;
-  margin-bottom: 4px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: white;
-  text-shadow: 1px 1px 0px #373737;
-}
-
-.ae2-slot-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, 40px);
-  gap: 2px;
-  background: #8b8b8b;
-  padding: 2px;
-  border: 2px solid var(--ae2-border-dark);
-  box-shadow: inset 2px 2px 0px #373737;
-}
-
-.ae2-slot-cell {
-  width: 36px;
-  height: 36px;
-  background: #8b8b8b;
-  border: 1px solid #373737;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ae2-slot-cell:hover {
-  outline: 2px solid #ffffff;
-  z-index: 1;
-}
-
-.ae2-slot-cell.is-selected {
-  background: rgba(142, 84, 233, 0.3);
-  outline: 2px solid var(--ae2-purple);
-}
-
-.stat-pill .value {
-  color: #ffffff !important;
-  text-shadow: 1px 1px 0px #373737;
-}
-
+/* 滚动条 */
 ::-webkit-scrollbar { width: 10px; }
 ::-webkit-scrollbar-track { background: #555; }
 ::-webkit-scrollbar-thumb { background: #aaaaaa; border: 2px solid var(--ae2-border-dark); }

@@ -1,101 +1,79 @@
 <template>
   <section class="panel-section">
-    <div class="panel-title">AE2 监控面板</div>
-
     <el-row :gutter="20">
       <el-col :xs="24" :md="12" :lg="10">
-        <el-card class="energy-card" shadow="hover">
-          <div class="energy-header">
-            <div class="energy-title">能量储备</div>
-            <el-tag size="small" effect="dark" :type="energyPercent < 20 ? 'danger' : 'success'">
-              {{ Math.floor(energyPercent) }}%
-            </el-tag>
+        <div class="mc-panel overview-card">
+          <div class="ae2-header-bar">
+            <div class="header-title">能量储备</div>
+            <div class="header-tag">{{ Math.floor(energyPercent) }}%</div>
           </div>
 
-          <el-progress
-            :percentage="energyPercent"
-            :stroke-width="10"
-            :color="energyColor"
-            :show-text="false"
-          />
+          <div class="overview-body">
+            <el-progress
+              :percentage="energyPercent"
+              :stroke-width="14"
+              :color="energyColor"
+              :show-text="false"
+            />
 
-          <div class="energy-meta">
-            <div class="energy-value">
-              {{ formatCompact(systemStatus.energyStored) }} / {{ formatCompact(systemStatus.energyMax) }} AE
+            <div class="energy-meta">
+              <div class="energy-value">
+                {{ formatCompact(systemStatus.energyStored) }} / {{ formatCompact(systemStatus.energyMax) }} AE
+              </div>
             </div>
-            <div class="energy-updated" v-if="systemStatus.lastUpdated">
-              更新: {{ formatTime(systemStatus.lastUpdated) }}
+
+            <div class="stats-grid">
+              <div class="energy-stat">
+                <div class="label">输入</div>
+                <div class="value">{{ formatRate(systemStatus.averageEnergyInput) }}</div>
+              </div>
+              <div class="energy-stat">
+                <div class="label">消耗</div>
+                <div class="value">{{ formatRate(systemStatus.energyUsage) }}</div>
+              </div>
+              <div class="energy-stat">
+                <div class="label">变化</div>
+                <div class="value" :class="netRateClass">{{ formatRate(systemStatus.netEnergyRate, true) }}</div>
+              </div>
             </div>
           </div>
-
-          <div class="energy-grid">
-            <div class="energy-stat">
-              <div class="label">输入均值</div>
-              <div class="value">{{ formatRate(systemStatus.averageEnergyInput) }}</div>
-            </div>
-            <div class="energy-stat">
-              <div class="label">消耗速率</div>
-              <div class="value">{{ formatRate(systemStatus.energyUsage) }}</div>
-            </div>
-            <div class="energy-stat">
-              <div class="label">净变化</div>
-              <div class="value" :class="netRateClass">{{ formatRate(systemStatus.netEnergyRate, true) }}</div>
-            </div>
-          </div>
-        </el-card>
+        </div>
       </el-col>
 
       <el-col :xs="24" :md="12" :lg="14">
-        <el-card class="storage-card" shadow="hover">
-          <div class="energy-header">
-            <div class="energy-title">库存总览</div>
-            <el-tag size="small" effect="dark" :type="storagePercent < 80 ? 'success' : 'warning'">
-              {{ Math.floor(storagePercent) }}%
-            </el-tag>
+        <div class="mc-panel overview-card">
+          <div class="ae2-header-bar">
+            <div class="header-title">存储总览</div>
+            <div class="header-tag">{{ Math.floor(storagePercent) }}%</div>
           </div>
 
-          <div class="storage-split" role="img" aria-label="内部与外部存储容量占比">
-            <div class="storage-segment internal" :style="{ width: `${storageInternalRatio}%` }">
-              <div class="storage-fill" :style="{ width: `${storageInternalUsage}%` }"></div>
+          <div class="overview-body">
+            <div class="storage-split mc-slot" role="img">
+              <div class="storage-segment internal" :style="{ width: `${storageInternalRatio}%` }">
+                <div class="storage-fill" :style="{ width: `${storageInternalUsage}%`, background: '#3dd6a5' }"></div>
+              </div>
+              <div class="storage-segment external" :style="{ width: `${storageExternalRatio}%` }">
+                <div class="storage-fill" :style="{ width: `${storageExternalUsage}%`, background: '#5d8aff' }"></div>
+              </div>
             </div>
-            <div class="storage-segment external" :style="{ width: `${storageExternalRatio}%` }">
-              <div class="storage-fill" :style="{ width: `${storageExternalUsage}%` }"></div>
-            </div>
-          </div>
 
-          <div class="storage-legend">
-            <div class="legend-item">
-              <span class="legend-swatch internal"></span>
-              内部 {{ formatCompact(systemStatus.storage.itemTotal) }}
+            <div class="storage-legend">
+              <div class="legend-item"><span class="swatch" style="background:#3dd6a5"></span> 内部</div>
+              <div class="legend-item"><span class="swatch" style="background:#5d8aff"></span> 外部</div>
             </div>
-            <div class="legend-item">
-              <span class="legend-swatch external"></span>
-              外部 {{ formatCompact(systemStatus.storage.itemExternalTotal) }}
-            </div>
-          </div>
 
-          <div class="energy-meta">
-            <div class="energy-value">
-              {{ formatCompact(storageTotalUsed) }} / {{ formatCompact(storageTotalCapacity) }} 物品存储
-            </div>
-            <div class="energy-updated" v-if="systemStatus.lastUpdated">
-              更新: {{ formatTime(systemStatus.lastUpdated) }}
-            </div>
-          </div>
-
-          <div class="storage-grid">
-            <div class="storage-block">
-              <div class="block-title">物品存储</div>
-              <div class="block-row">已用 {{ formatCompact(systemStatus.storage.itemUsed) }} / 总计 {{ formatCompact(systemStatus.storage.itemTotal) }}</div>
-              <div class="block-row muted">外部 {{ formatCompact(systemStatus.storage.itemExternalUsed) }} / {{ formatCompact(systemStatus.storage.itemExternalTotal) }}</div>
-            </div>
-            <div class="storage-block">
-              <div class="block-title">流体存储</div>
-              <div class="block-row">已用 {{ formatCompact(systemStatus.storage.fluidUsed) }} / 总计 {{ formatCompact(systemStatus.storage.fluidTotal) }}</div>
-              <div class="block-row muted">外部 {{ formatCompact(systemStatus.storage.fluidExternalUsed) }} / {{ formatCompact(systemStatus.storage.fluidExternalTotal) }}</div>
+            <div class="storage-stats-grid">
+              <div class="mc-slot storage-block">
+                <div class="block-title">物品存储</div>
+                <div class="block-row">{{ formatCompact(systemStatus.storage.itemUsed) }} / {{ formatCompact(systemStatus.storage.itemTotal) }}</div>
+              </div>
+              <div class="mc-slot storage-block">
+                <div class="block-title">流体存储</div>
+                <div class="block-row">{{ formatCompact(systemStatus.storage.fluidUsed) }} / {{ formatCompact(systemStatus.storage.fluidTotal) }}</div>
+              </div>
             </div>
           </div>
-        </el-card>
+        </div>
       </el-col>
     </el-row>
   </section>
@@ -119,3 +97,119 @@ defineProps({
   formatTime: { type: Function, required: true }
 })
 </script>
+
+<style scoped>
+.overview-card {
+  margin-bottom: 20px;
+}
+
+.overview-body {
+  padding: 15px;
+}
+
+.header-tag {
+  background: #aaaaaa;
+  border: 2px solid var(--ae2-border-dark);
+  box-shadow: inset 1px 1px 0px #ffffff;
+  padding: 2px 8px;
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: bold;
+}
+
+.energy-meta {
+  margin: 10px 0;
+  text-align: center;
+}
+
+.energy-value {
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--ae2-text);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.energy-stat {
+  flex-direction: column;
+  padding: 8px !important;
+}
+
+.energy-stat .label {
+  color: #bbbbbb !important;
+  font-size: 0.75rem;
+  margin-bottom: 4px;
+}
+
+.energy-stat .value {
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.storage-split {
+  display: flex;
+  overflow: hidden;
+  margin-bottom: 10px;
+  padding: 0 !important;
+}
+
+.storage-segment {
+  height: 100%;
+  position: relative;
+}
+
+.storage-fill {
+  height: 100%;
+}
+
+.storage-legend {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-bottom: 15px;
+  font-size: 0.85rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--ae2-border-dark);
+}
+
+.storage-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.storage-block {
+  flex-direction: column;
+  padding: 10px !important;
+  text-align: center;
+}
+
+.block-title {
+  font-size: 0.8rem;
+  color: #ccc;
+  margin-bottom: 4px;
+  text-shadow: 1px 1px 0px #373737;
+}
+
+.block-row {
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: white;
+  text-shadow: 1px 1px 0px #373737;
+}
+</style>
