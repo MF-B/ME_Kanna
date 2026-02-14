@@ -1,4 +1,4 @@
-/* AE2 & Modern Minecraft GUI Theme - Authentic Flat Pixel Edition */
+/* AE2 & Modern Minecraft GUI Theme - Authentic Flat Edition */
 @font-face {
   font-family: 'zpix';
   src: url('./fonts/zpix.ttf') format('truetype');
@@ -7,7 +7,7 @@
 }
 
 :root {
-  /* AE2 调色板 - 完全对齐截图，无纯黑，采用工业灰蓝 */
+  /* AE2 核心调色板 - 完全对齐截图，消除纯黑 */
   --ae2-bg-panel: #ced4e5;     /* 面板主背景 */
   --ae2-bg-sidebar: #bbbbbb;   /* 侧边栏背景 */
   --ae2-bg-slot: #8b8b8b;      /* 槽位/输入框背景 */
@@ -19,15 +19,17 @@
   --el-color-primary: var(--ae2-purple);
   --el-border-radius-base: 0px; 
   --el-font-family: 'zpix', sans-serif;
+  --el-bg-color: var(--ae2-bg-panel);
 }
 
+/* 强制像素化且无圆角 */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   font-family: var(--el-font-family) !important;
   image-rendering: pixelated;
   border-radius: 0 !important;
-  transition: none !important; /* 移除所有平滑动画 */
+  transition: none !important;
 }
 
 body {
@@ -44,7 +46,7 @@ body {
   display: flex;
   width: 100vw;
   height: 100vh;
-  background: var(--ae2-bg-panel); /* 同步主背景，消除缝隙黑影 */
+  background: var(--ae2-bg-panel);
 }
 
 .ae2-sidebar {
@@ -66,21 +68,14 @@ body {
   overflow: hidden;
 }
 
-/* --- 扁平化面板与卡片 --- */
-.mc-panel, .el-card, .el-dialog {
-  background: var(--ae2-bg-panel) !important;
-  border: 2px solid var(--ae2-border-outline) !important;
-  box-shadow: none !important;
+.dashboard-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-/* 槽位与统计块：扁平内凹效果 */
-.mc-slot, .ae2-slot-row, .ae2-slot-cell, .energy-stat, .el-input__wrapper, .storage-block {
-  background: var(--ae2-bg-slot) !important;
-  border: 2px solid var(--ae2-border-outline) !important;
-  box-shadow: none !important;
-}
-
-/* --- 顶栏重构：窄版且整合 ONLINE --- */
+/* --- 顶栏重构：收窄且整合 ONLINE --- */
 .dashboard-header {
   padding: 4px 12px;
   background: var(--ae2-bg-panel);
@@ -94,10 +89,12 @@ body {
 .dashboard-header h1, .header-title {
   font-size: 0.85rem;
   font-weight: bold;
-  margin: 0;
   color: var(--ae2-text);
-  display: flex;
-  align-items: center;
+  margin: 0;
+}
+
+.status-indicator {
+  margin-left: auto;
 }
 
 .status-text {
@@ -113,7 +110,70 @@ body {
   padding: 12px;
 }
 
-/* --- 按钮：模仿 AE2 截图的平整方块 --- */
+/* --- 扁平化面板与卡片 --- */
+.mc-panel, .el-card, .el-dialog {
+  background: var(--ae2-bg-panel) !important;
+  border: 2px solid var(--ae2-border-outline) !important;
+  box-shadow: none !important;
+}
+
+/* 槽位网格 (Grid) */
+.ae2-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 36px);
+  grid-auto-rows: 36px;
+  gap: 2px;
+  background: #8b8b8b;
+  padding: 2px;
+  border: 2px solid var(--ae2-border-outline);
+}
+
+.ae2-slot-cell {
+  width: 32px;
+  height: 32px;
+  background: #8b8b8b;
+  border: 1px solid #373737;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.ae2-slot-cell:hover {
+  outline: 2px solid #ffffff;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ae2-slot-cell.is-selected {
+  outline: 2px solid var(--ae2-purple);
+  background: rgba(142, 84, 233, 0.2);
+  z-index: 11;
+}
+
+/* Minecraft 风格 Tooltip */
+.el-popper.is-dark.ae2-tooltip {
+  background: rgba(16, 0, 16, 0.92) !important;
+  border: 2px solid #25015b !important;
+  box-shadow: inset 1px 1px 0px #5000ff !important;
+  color: #ffffff !important;
+  font-family: 'zpix', sans-serif !important;
+  border-radius: 0 !important;
+  padding: 8px 12px !important;
+}
+
+.ae2-tooltip-title { color: #ffffff; margin-bottom: 4px; font-size: 1rem; }
+.ae2-tooltip-sub { color: #5555ff; font-size: 0.8rem; }
+
+/* 槽位与统计块 */
+.mc-slot, .ae2-slot-row, .energy-stat, .el-input__wrapper, .storage-block {
+  background: var(--ae2-bg-slot) !important;
+  border: 2px solid var(--ae2-border-outline) !important;
+  box-shadow: none !important;
+}
+
+/* --- 按钮：仿截图平整方块 --- */
 .el-button, .ae2-side-button {
   border: 2px solid var(--ae2-border-outline) !important;
   background: #aaaaaa !important;
@@ -128,7 +188,7 @@ body {
 
 .el-button:hover, .ae2-side-button:hover {
   background: #bbbbbb !important;
-  outline: 2px solid #ffffff; /* 悬停时显示像素白框 */
+  border-color: #ffffff !important; 
 }
 
 .ae2-side-button {
@@ -157,7 +217,10 @@ body {
 
 .el-progress-bar__inner {
   border-radius: 0 !important;
-  box-shadow: none !important;
+}
+
+.el-input__inner {
+  color: #333 !important;
 }
 
 /* 滚动条 */

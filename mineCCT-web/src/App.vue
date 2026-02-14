@@ -3,7 +3,7 @@
     <div class="ae2-sidebar-container">
       <!-- 左侧 AE2 侧边栏 -->
       <aside class="ae2-sidebar">
-        <el-tooltip content="监控面板" placement="right">
+        <el-tooltip content="监控面板" placement="right" popper-class="ae2-tooltip">
           <div 
             class="ae2-side-button" 
             :class="{ 'is-active': activeTab === 'monitor' }"
@@ -13,7 +13,7 @@
           </div>
         </el-tooltip>
 
-        <el-tooltip content="工厂面板" placement="right">
+        <el-tooltip content="工厂面板" placement="right" popper-class="ae2-tooltip">
           <div 
             class="ae2-side-button" 
             :class="{ 'is-active': activeTab === 'factory' }"
@@ -23,7 +23,7 @@
           </div>
         </el-tooltip>
 
-        <el-tooltip content="库存控制" placement="right">
+        <el-tooltip content="库存控制" placement="right" popper-class="ae2-tooltip">
           <div 
             class="ae2-side-button" 
             :class="{ 'is-active': activeTab === 'inventory-control' }"
@@ -38,9 +38,9 @@
       <main class="ae2-main-content">
         <div class="mc-panel dashboard-main">
           <header class="dashboard-header">
-            <div class="header-title">
+            <h1 class="header-title">
               {{ activeTab === 'monitor' ? 'ME 监控终端' : activeTab === 'factory' ? 'ME 工厂终端' : 'ME 合成终端' }}
-            </div>
+            </h1>
             <div class="status-indicator">
               <span class="status-text" :class="{ online: connected }">
                 {{ connected ? 'ONLINE' : 'OFFLINE' }}
@@ -150,37 +150,10 @@ onMounted(async () => {
 </script>
 
 <style>
-/* 彻底精简 App.vue 样式，仅保留必要的全局变量和基础重置 */
+/* 样式已迁移至 assets/base.css 和 assets/main.css，此处保持精简 */
 body {
   margin: 0;
   padding: 0;
-  background-color: #1a1a1a;
-  overflow: hidden; /* 防止出现双滚动条 */
-}
-
-/* 状态字体的微调 */
-.status-text {
-  font-weight: bold;
-  font-size: 0.9rem;
-  color: #f56c6c;
-}
-.status-text.online {
-  color: #2e7d32;
-}
-
-/* 适配侧边栏布局 */
-.ae2-sidebar-container {
-  display: flex;
-  width: 100vw;
-  height: 100vh;
-}
-
-.ae2-main-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 10px;
   overflow: hidden;
 }
 </style>
-

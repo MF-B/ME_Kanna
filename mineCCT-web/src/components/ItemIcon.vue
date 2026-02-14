@@ -1,5 +1,5 @@
 <template>
-  <div class="item-icon-wrapper">
+  <div class="item-icon-container">
     <img 
       v-if="itemId && !isError"
       :src="iconUrl" 
@@ -10,6 +10,10 @@
     <div v-else class="fallback-icon">
       {{ getInitials(itemId) }}
     </div>
+    <!-- 右下角数量显示 -->
+    <div v-if="count !== undefined && count !== null" class="item-count">
+      {{ formatCount(count) }}
+    </div>
   </div>
 </template>
 
@@ -17,17 +21,16 @@
 import { computed, ref, watch } from 'vue'
 
 const props = defineProps({
-  itemId: { type: String, required: false }
+  itemId: { type: String, required: false },
+  count: { type: [Number, String], required: false }
 })
 
 const isError = ref(false)
 
-// ID 变了重置错误状态
 watch(() => props.itemId, () => {
   isError.value = false
 })
 
-// 拼接后端 API 地址 (假设后端在 8080 端口)
 const iconUrl = computed(() => {
   if (!props.itemId) return ''
   const host = window.location.hostname
@@ -43,35 +46,50 @@ const getInitials = (id) => {
   const name = id.split(':')[1] || id
   return name.charAt(0).toUpperCase()
 }
+
+// 格式化数量，参考 MC 风格 (如 1000 -> 1k)
+const formatCount = (val) => {
+  const num = Number(val)
+  if (isNaN(num)) return val
+  if (num < 1000) return num.toString()
+  if (num < 1000000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'k'
+  return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M'
+}
 </script>
 
 <style scoped>
-.item-icon-wrapper {
-  width: 42px; 
-  height: 42px;
-  background: rgba(0, 0, 0, 0.4); /* 深色半透明底座 */
-  border: 1px solid #4c4d4f;
-  border-radius: 6px;
+.item-icon-container {
+  width: 32px; 
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 5px;
-  box-sizing: border-box;
-  flex-shrink: 0; /* 防止被挤压 */
+  position: relative;
+  image-rendering: pixelated;
 }
 
 .item-img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  image-rendering: pixelated; /* 关键：像素风格 */
-  filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.6)); /* 立体阴影 */
+}
+
+.item-count {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  color: #ffffff;
+  font-family: 'zpix', sans-serif;
+  font-size: 12px;
+  text-shadow: 1px 1px 0px #3f3f3f;
+  pointer-events: none;
+  z-index: 2;
 }
 
 .fallback-icon {
-  color: #909399;
-  font-weight: 800;
-  font-size: 1.4em;
-  text-transform: uppercase;
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 1.2em;
+  text-shadow: 1px 1px 0px #3f3f3f;
 }
 </style>

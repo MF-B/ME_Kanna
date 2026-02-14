@@ -72,16 +72,25 @@
         </div>
         
         <div class="ae2-slot-grid craftable-grid-viewport">
-          <div
+          <el-tooltip
             v-for="item in filteredCraftables"
             :key="item.itemId"
-            class="ae2-slot-cell"
-            :class="{ 'is-selected': selectedCraftable && selectedCraftable.itemId === item.itemId }"
-            @click="selectCraftable(item)"
-            :title="displayItemName(item.itemId, item.itemName)"
+            effect="dark"
+            popper-class="ae2-tooltip"
+            placement="top"
           >
-            <ItemIcon :item-id="item.itemId" />
-          </div>
+            <template #content>
+              <div class="tooltip-name">{{ displayItemName(item.itemId, item.itemName) }}</div>
+              <div class="tooltip-id">{{ item.itemId }}</div>
+            </template>
+            <div
+              class="ae2-slot-cell"
+              :class="{ 'is-selected': selectedCraftable && selectedCraftable.itemId === item.itemId }"
+              @click="selectCraftable(item)"
+            >
+              <ItemIcon :item-id="item.itemId" :count="inventoryIndex[item.itemId] || 0" />
+            </div>
+          </el-tooltip>
         </div>
         <div class="selection-info" v-if="selectedCraftable" style="margin-top: 10px;">
           当前选择: <span class="text-purple">{{ displayItemName(selectedCraftable.itemId, selectedCraftable.itemName) }}</span>
