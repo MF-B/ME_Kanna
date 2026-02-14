@@ -1,86 +1,150 @@
-/* color palette from <https://github.com/vuejs/theme> */
+/* AE2 & Modern Minecraft GUI Theme */
+@font-face {
+  font-family: 'zpix';
+  src: url('./fonts/zpix.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 :root {
-  --vt-c-white: #ffffff;
-  --vt-c-white-soft: #f8f8f8;
-  --vt-c-white-mute: #f2f2f2;
-
-  --vt-c-black: #181818;
-  --vt-c-black-soft: #222222;
-  --vt-c-black-mute: #282828;
-
-  --vt-c-indigo: #2c3e50;
-
-  --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
-  --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
-  --vt-c-divider-dark-1: rgba(84, 84, 84, 0.65);
-  --vt-c-divider-dark-2: rgba(84, 84, 84, 0.48);
-
-  --vt-c-text-light-1: var(--vt-c-indigo);
-  --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
-  --vt-c-text-dark-1: var(--vt-c-white);
-  --vt-c-text-dark-2: rgba(235, 235, 235, 0.64);
+  /* AE2 调色板 - 浅灰白金属质感 */
+  --ae2-bg: #d1d5e3;           
+  --ae2-bg-darker: #b0b5c9;    
+  --ae2-bg-header: #c6cad9;
+  --ae2-slot-bg: #8b8b8b;      
+  --ae2-border-light: #ffffff; 
+  --ae2-border-dark: #555555;  
+  --ae2-purple: #8e54e9;       
+  --ae2-purple-glow: rgba(142, 84, 233, 0.4);
+  --ae2-blue: #548ce9;         
+  --ae2-text: #3f3f3f;         
+  --ae2-text-white: #ffffff;
+  
+  /* 全局变量覆盖 */
+  --color-background: var(--ae2-bg);
+  --color-text: var(--ae2-text);
+  --color-border: var(--ae2-border-dark);
+  
+  /* ElementPlus 变量覆盖 */
+  --el-color-primary: var(--ae2-purple);
+  --el-border-radius-base: 0px; 
+  --el-font-family: 'zpix', 'Helvetica Neue', sans-serif;
+  --el-bg-color: var(--ae2-bg);
+  --el-text-color-primary: var(--ae2-text);
+  --el-border-color: var(--ae2-border-dark);
 }
 
-/* semantic color variables for this project */
-:root {
-  --color-background: var(--vt-c-white);
-  --color-background-soft: var(--vt-c-white-soft);
-  --color-background-mute: var(--vt-c-white-mute);
-
-  --color-border: var(--vt-c-divider-light-2);
-  --color-border-hover: var(--vt-c-divider-light-1);
-
-  --color-heading: var(--vt-c-text-light-1);
-  --color-text: var(--vt-c-text-light-1);
-
-  --section-gap: 160px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: var(--vt-c-black);
-    --color-background-soft: var(--vt-c-black-soft);
-    --color-background-mute: var(--vt-c-black-mute);
-
-    --color-border: var(--vt-c-divider-dark-2);
-    --color-border-hover: var(--vt-c-divider-dark-1);
-
-    --color-heading: var(--vt-c-text-dark-1);
-    --color-text: var(--vt-c-text-dark-2);
-  }
-}
-
-*,
-*::before,
-*::after {
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
-  font-weight: normal;
+  font-family: var(--el-font-family);
+  image-rendering: pixelated;
 }
 
 body {
   min-height: 100vh;
   color: var(--color-text);
-  background: var(--color-background);
-  transition:
-    color 0.5s,
-    background-color 0.5s;
-  line-height: 1.6;
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    'Fira Sans',
-    'Droid Sans',
-    'Helvetica Neue',
-    sans-serif;
-  font-size: 15px;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  background-color: #333333; 
+  background-image: 
+    linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
+    url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAP3uCTZhw1gGGYhqS6gbSjQC6B5H/+P2HQC2K9REgpZgP9PwaBAAD09RbbK899YwAAAABJRU5ErkJggg=='); /* 模拟 MC 背景纹理 */
+  line-height: 1.4;
+  overflow-x: hidden;
 }
+
+/* --- MC 核心装饰类 --- */
+
+/* 经典面板边框 (Ore UI 质感) */
+.mc-panel {
+  background: var(--ae2-bg);
+  border: 2px solid var(--ae2-border-dark);
+  box-shadow: 
+    inset 2px 2px 0px var(--ae2-border-light),
+    inset -2px -2px 0px var(--ae2-bg-darker);
+  position: relative;
+}
+
+/* 槽位 (Slot) */
+.mc-slot {
+  background: #8b8b8b;
+  border: 2px solid var(--ae2-border-dark);
+  box-shadow: inset 2px 2px 0px #373737;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* --- ElementPlus 全局覆盖 --- */
+
+/* 1. 按钮 (MC 风格) */
+.el-button {
+  border: 2px solid var(--ae2-border-dark) !important;
+  background: #aaaaaa !important;
+  box-shadow: 
+    inset 2px 2px 0px #ffffff,
+    inset -2px -2px 0px #555555 !important;
+  color: #373737 !important;
+  text-shadow: 1px 1px 0px rgba(255,255,255,0.5);
+  transition: none !important;
+}
+
+.el-button:hover, .el-button:focus {
+  background: #bbbbbb !important;
+  color: #000000 !important;
+  border-color: #ffffff !important;
+}
+
+.el-button:active {
+  box-shadow: 
+    inset 2px 2px 0px #555555,
+    inset -2px -2px 0px #ffffff !important;
+}
+
+.el-button--primary {
+  background: var(--ae2-purple) !important;
+  color: white !important;
+  text-shadow: 1px 1px 0px #3f3f3f;
+}
+
+/* 2. 标签页 (AE2 顶部风格) */
+.el-tabs__nav-wrap::after { display: none; }
+.el-tabs__active-bar { background-color: var(--ae2-purple); height: 4px; }
+.el-tabs__item {
+  font-size: 1.1rem;
+  color: #555;
+}
+.el-tabs__item.is-active {
+  color: var(--ae2-purple) !important;
+  text-shadow: 0 0 8px var(--ae2-purple-glow);
+}
+
+/* 3. 对话框 (MC GUI 风格) */
+.el-dialog {
+  background: var(--ae2-bg) !important;
+  border: 2px solid var(--ae2-border-dark) !important;
+  box-shadow: 
+    inset 2px 2px 0px var(--ae2-border-light),
+    inset -2px -2px 0px var(--ae2-bg-darker),
+    10px 10px 0px rgba(0,0,0,0.3) !important;
+}
+.el-dialog__header {
+  background: var(--ae2-bg-darker);
+  margin-right: 0 !important;
+  padding: 10px 15px !important;
+  border-bottom: 2px solid var(--ae2-border-dark);
+}
+
+/* 4. 输入框 */
+.el-input__wrapper, .el-input-number {
+  background: #8b8b8b !important;
+  box-shadow: inset 2px 2px 0px #373737 !important;
+  border: 2px solid var(--ae2-border-dark) !important;
+}
+.el-input__inner {
+  color: white !important;
+}
+
+/* 5. 滚动条 */
+::-webkit-scrollbar { width: 12px; }
+::-webkit-scrollbar-track { background: var(--ae2-bg-darker); border-left: 2px solid var(--ae2-border-dark); }
+::-webkit-scrollbar-thumb { background: var(--ae2-bg); border: 2px solid var(--ae2-border-dark); box-shadow: inset 2px 2px 0px var(--ae2-border-light); }
