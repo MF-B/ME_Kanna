@@ -1,12 +1,5 @@
 <template>
   <section class="panel-section">
-    <div class="ae2-header-bar" style="margin-bottom: 20px;">
-      <div class="autocraft-title">
-        <span class="name">自动合成任务管理</span>
-        <span class="panel-subtitle">实时监控库存阈值并级联合成</span>
-      </div>
-    </div>
-
     <div class="task-list-container">
       <div
         v-for="task in autoCraftTasks"

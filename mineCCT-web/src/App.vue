@@ -38,14 +38,12 @@
       <main class="ae2-main-content">
         <div class="mc-panel dashboard-main">
           <header class="dashboard-header">
-            <div class="brand">
-              <h1>ME 网络终端</h1>
-              <span class="status-indicator">
-                <el-badge is-dot :type="connected ? 'success' : 'danger'">
-                  <span class="status-text" :class="{ online: connected }">
-                    {{ connected ? 'ONLINE' : 'OFFLINE' }}
-                  </span>
-                </el-badge>
+            <div class="header-title">
+              {{ activeTab === 'monitor' ? 'ME 监控终端' : activeTab === 'factory' ? 'ME 工厂终端' : 'ME 合成终端' }}
+            </div>
+            <div class="status-indicator">
+              <span class="status-text" :class="{ online: connected }">
+                {{ connected ? 'ONLINE' : 'OFFLINE' }}
               </span>
             </div>
           </header>
