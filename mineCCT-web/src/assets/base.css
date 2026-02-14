@@ -271,6 +271,46 @@ body {
   background: #222;
 }
 
+/* 10.5 AE2 物品槽位网格（用于 AutoCraft 可合成列表） */
+.ae2-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 40px);
+  gap: 2px;
+  background: #8b8b8b;
+  padding: 2px;
+  border: 2px solid var(--ae2-border-dark);
+  box-shadow: inset 2px 2px 0px #373737;
+}
+
+.ae2-slot-cell {
+  width: 36px;
+  height: 36px;
+  background: #8b8b8b;
+  border: 1px solid #373737;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.ae2-slot-cell:hover {
+  background: rgba(255, 255, 255, 0.1);
+  outline: 2px solid #ffffff;
+  z-index: 1;
+}
+
+.ae2-slot-cell.is-selected {
+  background: rgba(142, 84, 233, 0.3);
+  outline: 2px solid var(--ae2-purple);
+  z-index: 2;
+}
+
+.ae2-slot-cell :deep(.item-icon-wrapper) {
+  width: 28px;
+  height: 28px;
+}
+
 .dashboard-main {
   height: 100%;
   display: flex;
@@ -330,7 +370,83 @@ body {
   box-shadow: inset 0 0 4px rgba(255,255,255,0.3);
 }
 
-/* 13. 滚动条 */
+/* 13. 工厂卡片专项 (AE2 质感) */
+.factory-card-ae2 {
+  background: var(--ae2-bg) !important;
+  border: 2px solid var(--ae2-border-dark) !important;
+  box-shadow: inset 2px 2px 0px var(--ae2-border-light) !important;
+  margin-bottom: 15px;
+}
+
+.factory-card-ae2.is-active {
+  border-color: var(--ae2-purple) !important;
+  box-shadow: 
+    inset 2px 2px 0px var(--ae2-border-light),
+    0 0 10px var(--ae2-purple-glow) !important;
+}
+
+.ae2-slot-row {
+  background: #8b8b8b;
+  border: 2px solid var(--ae2-border-dark);
+  box-shadow: 
+    inset 2px 2px 0px #373737,
+    1px 1px 0px var(--ae2-border-light); /* 增加外围亮边增强立体感 */
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ae2-slot-row:hover {
+  background: #9d9d9d;
+  border-color: #ffffff;
+}
+
+/* 14. AE2 通用标题条与功能栏 */
+.ae2-header-bar, .ae2-footer-bar {
+  background: var(--ae2-bg-header);
+  border-bottom: 2px solid var(--ae2-border-dark);
+  box-shadow: inset 0 1px 0 var(--ae2-border-light);
+  margin: -12px -12px 12px -12px;
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ae2-footer-bar {
+  border-bottom: none;
+  border-top: 2px solid var(--ae2-border-dark);
+  margin: 12px -12px -12px -12px;
+  box-shadow: inset 0 1px 0 var(--ae2-border-light);
+}
+
+.ae2-footer-bar .control-label {
+  font-size: 0.85rem;
+  color: var(--ae2-text);
+  font-weight: bold;
+}
+
+/* 15. ElementPlus Checkbox & Input 像素化适配 */
+.el-checkbox__inner {
+  border-radius: 0px !important;
+  border: 2px solid var(--ae2-border-dark) !important;
+  background: #8b8b8b !important;
+  width: 18px !important;
+  height: 18px !important;
+}
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  background-color: var(--ae2-purple) !important;
+  border-color: var(--ae2-border-light) !important;
+}
+.el-checkbox__inner::after {
+  border-width: 2px !important;
+  left: 4px !important;
+  top: 1px !important;
+}
+
+/* 16. 滚动条 */
 ::-webkit-scrollbar { width: 12px; }
 ::-webkit-scrollbar-track { background: var(--ae2-bg-darker); border-left: 2px solid var(--ae2-border-dark); }
 ::-webkit-scrollbar-thumb { background: var(--ae2-bg); border: 2px solid var(--ae2-border-dark); box-shadow: inset 2px 2px 0px var(--ae2-border-light); }
