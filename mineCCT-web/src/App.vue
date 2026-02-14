@@ -1,29 +1,58 @@
 <template>
   <el-config-provider :locale="zhCn">
-    <div class="dashboard-container">
-
-      <header class="dashboard-header">
-        <div class="header-left-group">
-          <div class="brand">
-            <h1>MF_B 的机器</h1>
+    <div class="ae2-sidebar-container">
+      <!-- 左侧 AE2 侧边栏 -->
+      <aside class="ae2-sidebar">
+        <el-tooltip content="监控面板" placement="right">
+          <div 
+            class="ae2-side-button" 
+            :class="{ 'is-active': activeTab === 'monitor' }"
+            @click="activeTab = 'monitor'"
+          >
+            <el-icon><Monitor /></el-icon>
           </div>
-        </div>
+        </el-tooltip>
 
-        <div class="header-controls">
-          <div class="status-bar">
-            <el-badge is-dot :type="connected ? 'success' : 'danger'">
-              <span class="status-text" :class="{ online: connected }">
-                {{ connected ? 'System Online' : 'Offline' }}
+        <el-tooltip content="工厂面板" placement="right">
+          <div 
+            class="ae2-side-button" 
+            :class="{ 'is-active': activeTab === 'factory' }"
+            @click="activeTab = 'factory'"
+          >
+            <el-icon><OfficeBuilding /></el-icon>
+          </div>
+        </el-tooltip>
+
+        <el-tooltip content="库存控制" placement="right">
+          <div 
+            class="ae2-side-button" 
+            :class="{ 'is-active': activeTab === 'inventory-control' }"
+            @click="activeTab = 'inventory-control'"
+          >
+            <el-icon><Box /></el-icon>
+          </div>
+        </el-tooltip>
+      </aside>
+
+      <!-- 右侧主面板区 -->
+      <main class="ae2-main-content">
+        <div class="mc-panel dashboard-main">
+          <header class="dashboard-header">
+            <div class="brand">
+              <h1>ME 网络终端</h1>
+              <span class="status-indicator">
+                <el-badge is-dot :type="connected ? 'success' : 'danger'">
+                  <span class="status-text" :class="{ online: connected }">
+                    {{ connected ? 'ONLINE' : 'OFFLINE' }}
+                  </span>
+                </el-badge>
               </span>
-            </el-badge>
-          </div>
-        </div>
-      </header>
+            </div>
+          </header>
 
-      <main>
-        <el-tabs v-model="activeTab" class="dashboard-tabs">
-          <el-tab-pane label="监控面板" name="monitor">
+          <div class="content-viewport">
             <SystemOverview
+              v-if="activeTab === 'monitor'"
               :system-status="systemStatus"
               :energy-percent="energyPercent"
               :energy-color="energyColor"
@@ -39,18 +68,20 @@
               :format-rate="formatRate"
               :format-time="formatTime"
             />
-          </el-tab-pane>
 
-          <el-tab-pane label="工厂面板" name="factory">
-            <FactoryPanel :connected="connected" :factories="factories" @command="handleCommand" />
-          </el-tab-pane>
+            <FactoryPanel 
+              v-else-if="activeTab === 'factory'"
+              :connected="connected" 
+              :factories="factories" 
+              @command="handleCommand" 
+            />
 
-          <el-tab-pane label="库存控制" name="inventory-control">
-            <AutoCraftPanel />
-          </el-tab-pane>
-        </el-tabs>
+            <AutoCraftPanel 
+              v-else-if="activeTab === 'inventory-control'"
+            />
+          </div>
+        </div>
       </main>
-
     </div>
   </el-config-provider>
 </template>

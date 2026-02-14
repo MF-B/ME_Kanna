@@ -106,42 +106,68 @@ body {
   text-shadow: 1px 1px 0px #3f3f3f;
 }
 
-/* 2. 标签页 (AE2 顶部风格) */
+/* 2. 标签页 (AE2 顶部风格 - 增强) */
+.el-tabs__header {
+  margin: 0 !important;
+  background: var(--ae2-bg-darker);
+  border-bottom: 2px solid var(--ae2-border-dark);
+}
 .el-tabs__nav-wrap::after { display: none; }
-.el-tabs__active-bar { background-color: var(--ae2-purple); height: 4px; }
+.el-tabs__active-bar { 
+  background-color: var(--ae2-purple); 
+  height: 4px; 
+  box-shadow: 0 0 10px var(--ae2-purple-glow);
+}
 .el-tabs__item {
   font-size: 1.1rem;
   color: #555;
+  height: 50px !important;
+  line-height: 50px !important;
+  padding: 0 25px !important;
 }
 .el-tabs__item.is-active {
   color: var(--ae2-purple) !important;
-  text-shadow: 0 0 8px var(--ae2-purple-glow);
+  background: var(--ae2-bg);
+  border-left: 2px solid var(--ae2-border-dark);
+  border-right: 2px solid var(--ae2-border-dark);
+  box-shadow: inset 0 4px 0 var(--ae2-purple);
 }
 
-/* 3. 对话框 (MC GUI 风格) */
+/* 3. 对话框 (MC GUI 风格 - 增强) */
 .el-dialog {
   background: var(--ae2-bg) !important;
   border: 2px solid var(--ae2-border-dark) !important;
+  padding: 0 !important;
   box-shadow: 
     inset 2px 2px 0px var(--ae2-border-light),
     inset -2px -2px 0px var(--ae2-bg-darker),
-    10px 10px 0px rgba(0,0,0,0.3) !important;
+    15px 15px 0px rgba(0,0,0,0.4) !important;
 }
 .el-dialog__header {
-  background: var(--ae2-bg-darker);
+  background: #c6cad9;
   margin-right: 0 !important;
-  padding: 10px 15px !important;
+  padding: 15px 20px !important;
   border-bottom: 2px solid var(--ae2-border-dark);
+}
+.el-dialog__title {
+  font-family: 'zpix' !important;
+  color: #3f3f3f !important;
+  font-size: 1.3rem !important;
+}
+.el-dialog__body {
+  padding: 20px !important;
 }
 
 /* 4. 输入框 (AE2 A 方案：浅底深字) */
 .el-input__wrapper, .el-input-number {
-  background: #bbbbbb !important; /* 稍微深一点的灰色，模拟内凹 */
-  box-shadow: inset 2px 2px 0px #373737 !important;
+  background: #d9dceb !important;
+  box-shadow: inset 2px 2px 0px #9aa0b5, inset -2px -2px 0px #ffffff !important;
   border: 2px solid var(--ae2-border-dark) !important;
+  padding: 5px !important;
 }
 .el-input__inner {
-  color: #3f3f3f !important; /* 深灰色文字 */
+  color: #3f3f3f !important;
+  text-shadow: none !important;
   font-weight: bold !important;
 }
 
@@ -149,30 +175,89 @@ body {
 .el-card {
   background: var(--ae2-bg) !important;
   border: 2px solid var(--ae2-border-dark) !important;
-  box-shadow: inset 2px 2px 0px var(--ae2-border-light) !important;
+  box-shadow: 
+    inset 2px 2px 0px var(--ae2-border-light),
+    inset -2px -2px 0px var(--ae2-bg-darker) !important;
   color: var(--ae2-text) !important;
 }
 
-.el-tag {
+/* 6. 开关 (Switch) - 模拟 AE2 指示灯 */
+.el-switch__core {
   border-radius: 0px !important;
   border: 2px solid var(--ae2-border-dark) !important;
+  background: #555555 !important;
+}
+.el-switch.is-checked .el-switch__core {
+  background: var(--ae2-purple) !important;
+}
+.el-switch__action {
+  border-radius: 0px !important;
   background: #aaaaaa !important;
-  color: #3f3f3f !important;
-  font-weight: bold;
+  box-shadow: inset 1px 1px 0px #ffffff;
 }
 
-.el-tag--success {
-  background: #67c23a !important;
-  color: white !important;
-  text-shadow: 1px 1px 0px #3f3f3f;
+/* 7. 状态颜色 */
+.text-green { color: #43a047 !important; font-weight: bold; }
+.text-red { color: #e53935 !important; font-weight: bold; }
+.text-purple { color: var(--ae2-purple) !important; font-weight: bold; }
+
+/* 8. AE2 侧边栏页签样式 */
+.ae2-sidebar-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: #333333;
 }
 
-/* 6. 状态颜色微调 */
-.text-green { color: #43a047 !important; }
-.text-red { color: #e53935 !important; }
-.text-purple { color: var(--ae2-purple) !important; }
+.ae2-sidebar {
+  width: 70px;
+  background: var(--ae2-bg-darker);
+  border-right: 2px solid var(--ae2-border-dark);
+  display: flex;
+  flex-direction: column;
+  padding: 10px 5px;
+  gap: 10px;
+  z-index: 10;
+}
 
-/* 7. 滚动条 */
+.ae2-side-button {
+  width: 56px;
+  height: 56px;
+  background: var(--ae2-bg) !important;
+  border: 2px solid var(--ae2-border-dark) !important;
+  box-shadow: inset 2px 2px 0px var(--ae2-border-light) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0 !important;
+}
+
+.ae2-side-button.is-active {
+  background: var(--ae2-purple) !important;
+  border-color: var(--ae2-border-light) !important;
+  box-shadow: 
+    inset 2px 2px 0px rgba(255,255,255,0.5),
+    0 0 12px var(--ae2-purple-glow) !important;
+}
+
+.ae2-side-button .el-icon {
+  font-size: 24px;
+  color: var(--ae2-text);
+}
+
+.ae2-side-button.is-active .el-icon {
+  color: white;
+}
+
+.ae2-main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+/* 9. 滚动条 */
 ::-webkit-scrollbar { width: 12px; }
 ::-webkit-scrollbar-track { background: var(--ae2-bg-darker); border-left: 2px solid var(--ae2-border-dark); }
 ::-webkit-scrollbar-thumb { background: var(--ae2-bg); border: 2px solid var(--ae2-border-dark); box-shadow: inset 2px 2px 0px var(--ae2-border-light); }
