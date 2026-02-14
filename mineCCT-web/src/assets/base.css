@@ -201,7 +201,19 @@ body {
 .text-red { color: #e53935 !important; font-weight: bold; }
 .text-purple { color: var(--ae2-purple) !important; font-weight: bold; }
 
-/* 8. AE2 侧边栏页签样式 */
+/* 8. 进度条 (AE2 风格) */
+.el-progress-bar__outer {
+  border-radius: 0px !important;
+  background-color: #555555 !important;
+  border: 2px solid var(--ae2-border-dark) !important;
+  height: 12px !important;
+}
+.el-progress-bar__inner {
+  border-radius: 0px !important;
+  box-shadow: 0 0 8px var(--ae2-purple-glow);
+}
+
+/* 9. AE2 侧边栏页签样式 (补回与增强) */
 .ae2-sidebar-container {
   display: flex;
   height: 100vh;
@@ -251,13 +263,74 @@ body {
   color: white;
 }
 
+/* 10. 主布局微调 */
 .ae2-main-content {
+  flex: 1;
+  overflow: hidden;
+  padding: 10px;
+  background: #222;
+}
+
+.dashboard-main {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dashboard-header {
+  padding: 12px 20px;
+  background: var(--ae2-bg-header);
+  border-bottom: 2px solid var(--ae2-border-dark);
+}
+
+.dashboard-header h1 {
+  font-size: 1.4rem;
+  margin: 0;
+  color: var(--ae2-text);
+  text-shadow: 1px 1px 0px #ffffff;
+}
+
+.content-viewport {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
 }
 
-/* 9. 滚动条 */
+/* 11. 统计区块 (AE2 风格) */
+.energy-stat {
+  background: #8b8b8b !important;
+  border: 2px solid var(--ae2-border-dark) !important;
+  box-shadow: inset 2px 2px 0px #373737 !important;
+  padding: 10px !important;
+  color: white !important;
+}
+
+.energy-stat .label {
+  color: #ccc !important;
+  font-size: 0.8rem;
+}
+
+.storage-block {
+  background: var(--ae2-bg) !important;
+  border: 2px solid var(--ae2-border-dark) !important;
+  box-shadow: inset 2px 2px 0px var(--ae2-border-light) !important;
+}
+
+/* 12. AE2 存储分段条 */
+.storage-split {
+  height: 20px !important;
+  background: #555 !important;
+  border: 2px solid var(--ae2-border-dark) !important;
+  border-radius: 0 !important;
+}
+
+.storage-fill {
+  height: 100% !important;
+  box-shadow: inset 0 0 4px rgba(255,255,255,0.3);
+}
+
+/* 13. 滚动条 */
 ::-webkit-scrollbar { width: 12px; }
 ::-webkit-scrollbar-track { background: var(--ae2-bg-darker); border-left: 2px solid var(--ae2-border-dark); }
 ::-webkit-scrollbar-thumb { background: var(--ae2-bg); border: 2px solid var(--ae2-border-dark); box-shadow: inset 2px 2px 0px var(--ae2-border-light); }
