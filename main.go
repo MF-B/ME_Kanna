@@ -12,7 +12,7 @@ func main() {
 	r := gin.Default()
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization")
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -35,6 +35,10 @@ func main() {
 	r.PUT("/config/whitelist", api.HandleConfigUpdate)
 	r.GET("/autocraft/craftables", api.HandleAutoCraftables)
 	r.GET("/autocraft/recipe", api.HandleAutoCraftRecipe)
+	r.GET("/autocraft/tasks", api.HandleAutoCraftTasks)
+	r.POST("/autocraft/tasks", api.HandleAutoCraftTasks)
+	r.DELETE("/autocraft/tasks/:itemId", api.HandleAutoCraftTaskDelete)
+	r.PATCH("/autocraft/tasks/:itemId", api.HandleAutoCraftTaskPatch)
 
 	r.Static("/lua", "./lua_scripts")
 

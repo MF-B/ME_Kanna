@@ -78,9 +78,14 @@ local function receiveLoop(ws)
                 if itemId and itemId ~= "" then
                     ae_device = aeBridge.ensureBridge(ae_device)
                     if ae_device then
-                        local task = aeBridge.craft(ae_device, itemId, count)
+                        local task, err = aeBridge.craft(ae_device, itemId, count)
                         local ok = task ~= nil
-                        print("Craft: " .. tostring(itemId) .. " x" .. tostring(count) .. " -> " .. tostring(ok))
+                        if ok then
+                            local craftId = task.id or task.taskId or "?"
+                            print("Craft queued: " .. tostring(itemId) .. " x" .. tostring(count) .. " (id=" .. tostring(craftId) .. ")")
+                        else
+                            print("Craft failed: " .. tostring(itemId) .. " x" .. tostring(count) .. " reason=" .. tostring(err))
+                        end
                     else
                         print("Craft failed: no ME Bridge")
                     end
