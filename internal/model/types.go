@@ -1,33 +1,43 @@
 package model
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type EnergyStats struct {
 	EnergyStored       float64 `json:"energyStored"`
 	EnergyMax          float64 `json:"energyMax"`
 	EnergyUsage        float64 `json:"energyUsage"`
 	AverageEnergyInput float64 `json:"averageEnergyInput"`
+	NetEnergyRate      float64 `json:"netEnergyRate"`
 }
 
 type StorageStats struct {
-	ItemTotal                 int64 `json:"itemTotal"`
-	ItemUsed                  int64 `json:"itemUsed"`
-	ItemAvailable             int64 `json:"itemAvailable"`
-	ItemExternalTotal         int64 `json:"itemExternalTotal"`
-	ItemExternalUsed          int64 `json:"itemExternalUsed"`
-	ItemExternalAvailable     int64 `json:"itemExternalAvailable"`
-	FluidTotal                int64 `json:"fluidTotal"`
-	FluidUsed                 int64 `json:"fluidUsed"`
-	FluidAvailable            int64 `json:"fluidAvailable"`
-	FluidExternalTotal        int64 `json:"fluidExternalTotal"`
-	FluidExternalUsed         int64 `json:"fluidExternalUsed"`
-	FluidExternalAvailable    int64 `json:"fluidExternalAvailable"`
-	ChemicalTotal             int64 `json:"chemicalTotal"`
-	ChemicalUsed              int64 `json:"chemicalUsed"`
-	ChemicalAvailable         int64 `json:"chemicalAvailable"`
-	ChemicalExternalTotal     int64 `json:"chemicalExternalTotal"`
-	ChemicalExternalUsed      int64 `json:"chemicalExternalUsed"`
-	ChemicalExternalAvailable int64 `json:"chemicalExternalAvailable"`
+	// 物品存储 (ME Drives)
+	ItemTotal int64 `json:"itemTotal"`
+	ItemUsed  int64 `json:"itemUsed"`
+	// 计算字段：剩余空间 (Total - Used)
+	ItemAvailable int64 `json:"itemAvailable,omitempty"`
+
+	// 外部物品存储 (Storage Bus)
+	ItemExternalTotal int64 `json:"itemExternalTotal"`
+	ItemExternalUsed  int64 `json:"itemExternalUsed"`
+	// 计算字段
+	ItemExternalAvailable int64 `json:"itemExternalAvailable,omitempty"`
+
+	// 流体存储
+	FluidTotal int64 `json:"fluidTotal"`
+	FluidUsed  int64 `json:"fluidUsed"`
+	// 计算字段
+	FluidAvailable int64 `json:"fluidAvailable,omitempty"`
+}
+
+// SystemStats 存储系统运行时的状态（高频变动）
+type SystemStats struct {
+	LastUpdated int64            `json:"lastUpdated"`
+	EnergyStats EnergyStats      `json:"energyStats"`
+	Storage     StorageStats     `json:"storage"`
+	Inventory   map[string]int64 `json:"inventory,omitempty"`
 }
 
 // LuaReport 对应 AE2 发上来的库存快照
@@ -105,6 +115,8 @@ type Command struct {
 	Action      string               `json:"action"`
 	Type        string               `json:"type,omitempty"`
 	RequestID   string               `json:"requestId,omitempty"`
+	ItemID      string               `json:"itemId,omitempty"`
+	Count       int64                `json:"count,omitempty"`
 	Name        string               `json:"name,omitempty"`
 	PrimaryItem string               `json:"primaryItem,omitempty"`
 	Items       []FactoryItemSetting `json:"items,omitempty"`

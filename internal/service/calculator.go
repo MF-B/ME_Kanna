@@ -1,6 +1,7 @@
 package service
 
 import (
+	"log"
 	"mineCCT/internal/config"
 	"mineCCT/internal/model"
 	"mineCCT/internal/store"
@@ -26,6 +27,17 @@ const RateBucketCount = 10
 // ========================================================
 // 核心处理逻辑
 // ========================================================
+
+func SetMainDeviceID(id string) {
+	autoCraftState.mu.Lock()
+	defer autoCraftState.mu.Unlock()
+
+	// 只有当 ID 变了的时候才打印日志，防止刷屏
+	if autoCraftState.deviceID != id {
+		autoCraftState.deviceID = id
+		log.Printf("[AutoCraft] 主计算机锁定: %s (Main Storage)", id)
+	}
+}
 
 func applyFactoryOverrides(factoryID string, factory *model.FactoryData) {
 	if factory == nil {
@@ -158,57 +170,67 @@ func ProcessFlowUpdate(msg model.IncomingMessage) {
 	s.Mutex.Unlock()
 
 	if len(collected) > 0 {
-		normalized := normalizeWhitelist(collected)
-		newVersion := computeWhitelistHash(normalized)
-		_, currentVersion := GetWhitelistSnapshot()
-		if newVersion != currentVersion {
-			_, _ = UpdateWhitelist(normalized)
-		}
+		_, _, _ = EnsureWhitelistItems(collected)
 	}
 }
 
 // ProcessInventoryUpdate 处理 AE 库存 (Hub 分发模式)
 func ProcessInventoryUpdate(deviceID string, report model.LuaReport) {
+	EvaluateAutoCraftTasks(deviceID, report.RawItems)
+
 	s := store.Global
 	s.Mutex.Lock()
 	defer s.Mutex.Unlock()
 
 	now := time.Now()
+	networkID := resolveNetworkID(deviceID)
+	systemStats := ensureNetworkStats(s, networkID)
 
-	updateSystemEnergy(now, report, s)
-	updateSystemStorage(now, report, s)
-	updateFactories(now, report, s)
+	updateSystemEnergy(now, report, systemStats)
+	updateSystemStorage(now, report, systemStats)
+	updateFactories(now, report, s, systemStats)
 
 	BroadcastToWeb()
 }
 
-func updateSystemEnergy(now time.Time, report model.LuaReport, s *store.StateManager) {
+func updateSystemEnergy(now time.Time, report model.LuaReport, systemStats *model.SystemStats) {
+	if systemStats == nil || report.Energy == nil {
+		return
+	}
 	if report.Energy == nil {
 		return
 	}
 	if report.Energy.EnergyMax > 0 {
-		s.SystemStatus.EnergyStored = report.Energy.EnergyStored
-		s.SystemStatus.EnergyMax = report.Energy.EnergyMax
-		s.SystemStatus.EnergyUsage = report.Energy.EnergyUsage
-		s.SystemStatus.AverageEnergyInput = report.Energy.AverageEnergyInput
-		s.SystemStatus.NetEnergyRate = report.Energy.AverageEnergyInput - report.Energy.EnergyUsage
-		s.SystemStatus.LastUpdated = now.Unix()
+		systemStats.EnergyStats.EnergyStored = report.Energy.EnergyStored
+		systemStats.EnergyStats.EnergyMax = report.Energy.EnergyMax
+		systemStats.EnergyStats.EnergyUsage = report.Energy.EnergyUsage
+		systemStats.EnergyStats.AverageEnergyInput = report.Energy.AverageEnergyInput
+		systemStats.EnergyStats.NetEnergyRate = report.Energy.AverageEnergyInput - report.Energy.EnergyUsage
+		systemStats.LastUpdated = now.Unix()
 	}
 }
 
-func updateSystemStorage(now time.Time, report model.LuaReport, s *store.StateManager) {
-	if report.Storage == nil {
+func updateSystemStorage(now time.Time, report model.LuaReport, systemStats *model.SystemStats) {
+	if systemStats == nil || report.Storage == nil {
 		return
 	}
 
-	s.SystemStatus.Storage = *report.Storage
-	s.SystemStatus.LastUpdated = now.Unix()
+	systemStats.Storage = *report.Storage
+	systemStats.LastUpdated = now.Unix()
 }
 
-func updateFactories(now time.Time, report model.LuaReport, s *store.StateManager) {
+func updateFactories(now time.Time, report model.LuaReport, s *store.StateManager, systemStats *model.SystemStats) {
 	globalInventory := report.RawItems
 	if globalInventory == nil {
 		globalInventory = make(map[string]int64)
+	}
+
+	inventorySnapshot := make(map[string]int64, len(globalInventory))
+	for itemID, count := range globalInventory {
+		inventorySnapshot[itemID] = count
+	}
+	if systemStats != nil {
+		systemStats.Inventory = inventorySnapshot
 	}
 
 	for factoryID, factory := range s.Factories {
@@ -240,15 +262,88 @@ func BroadcastToWeb() {
 		list = append(list, v)
 	}
 
+	systemStats := selectBroadcastSystemStats(s)
+
 	payload := gin.H{
 		"type":   "update",
 		"data":   list,
-		"system": s.SystemStatus,
+		"system": toLegacySystemPayload(systemStats),
 	}
 
 	for client := range s.WebClients {
 		// 忽略错误，简单处理
 		_ = client.WriteJSON(payload)
+	}
+}
+
+func resolveNetworkID(deviceID string) string {
+	trimmed := strings.TrimSpace(deviceID)
+	if trimmed != "" {
+		return trimmed
+	}
+	return "default"
+}
+
+func ensureNetworkStats(s *store.StateManager, networkID string) *model.SystemStats {
+	if s.Networks == nil {
+		s.Networks = make(map[string]*model.SystemStats)
+	}
+	stats := s.Networks[networkID]
+	if stats == nil {
+		stats = &model.SystemStats{
+			EnergyStats: model.EnergyStats{EnergyMax: 1},
+			Inventory:   make(map[string]int64),
+		}
+		s.Networks[networkID] = stats
+	}
+	if stats.Inventory == nil {
+		stats.Inventory = make(map[string]int64)
+	}
+	if stats.EnergyStats.EnergyMax == 0 {
+		stats.EnergyStats.EnergyMax = 1
+	}
+	return stats
+}
+
+func selectBroadcastSystemStats(s *store.StateManager) *model.SystemStats {
+	autoCraftState.mu.RLock()
+	primaryID := strings.TrimSpace(autoCraftState.deviceID)
+	autoCraftState.mu.RUnlock()
+
+	if primaryID != "" {
+		if stats := s.Networks[primaryID]; stats != nil {
+			return stats
+		}
+	}
+
+	for _, stats := range s.Networks {
+		if stats != nil {
+			return stats
+		}
+	}
+
+	return &model.SystemStats{EnergyStats: model.EnergyStats{EnergyMax: 1}, Inventory: map[string]int64{}}
+}
+
+func toLegacySystemPayload(stats *model.SystemStats) gin.H {
+	if stats == nil {
+		stats = &model.SystemStats{EnergyStats: model.EnergyStats{EnergyMax: 1}, Inventory: map[string]int64{}}
+	}
+	inventory := stats.Inventory
+	if inventory == nil {
+		inventory = map[string]int64{}
+	}
+
+	return gin.H{
+		"lastUpdated":        stats.LastUpdated,
+		"energyStats":        stats.EnergyStats,
+		"energyStored":       stats.EnergyStats.EnergyStored,
+		"energyMax":          stats.EnergyStats.EnergyMax,
+		"energyUsage":        stats.EnergyStats.EnergyUsage,
+		"averageEnergyInput": stats.EnergyStats.AverageEnergyInput,
+		"netEnergyRate":      stats.EnergyStats.NetEnergyRate,
+		"storage":            stats.Storage,
+		"inventory":          inventory,
 	}
 }
 
@@ -320,11 +415,8 @@ func UpdateFactoryItemSettings(id string, primaryItem string, settings []model.F
 	BroadcastToWeb()
 	s.Mutex.Unlock()
 
-	normalized := normalizeWhitelist(collected)
-	newVersion := computeWhitelistHash(normalized)
-	_, currentVersion := GetWhitelistSnapshot()
-	if newVersion != currentVersion {
-		_, _ = UpdateWhitelist(normalized)
+	if len(collected) > 0 {
+		_, _, _ = EnsureWhitelistItems(collected)
 	}
 }
 

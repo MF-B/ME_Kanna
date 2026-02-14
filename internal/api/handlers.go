@@ -54,6 +54,9 @@ func HandleMinecraft(c *gin.Context) {
 		}
 
 		if msg.ID != "" && !isRegistered {
+			if msg.Name == "Main Storage" {
+				service.SetMainDeviceID(msg.ID)
+			}
 			currentDeviceID = msg.ID
 			s := store.Global
 			s.Mutex.Lock()
@@ -190,6 +193,10 @@ type whitelistUpdateRequest struct {
 	Items []string `json:"items"`
 }
 
+type autoCraftTaskPatchRequest struct {
+	IsActive bool `json:"isActive"`
+}
+
 func HandleConfigUpdate(c *gin.Context) {
 	_, err := io.ReadAll(c.Request.Body)
 	if err != nil {
@@ -252,4 +259,62 @@ func HandleAutoCraftRecipe(c *gin.Context) {
 	}
 
 	c.JSON(200, recipe)
+}
+
+func HandleAutoCraftTasks(c *gin.Context) {
+	if c.Request.Method == http.MethodGet {
+		c.JSON(200, gin.H{"items": service.ListAutoCraftTasks()})
+		return
+	}
+
+	var task model.AutoCraftTask
+	if err := c.ShouldBindJSON(&task); err != nil {
+		c.JSON(400, gin.H{"error": "invalid json"})
+		return
+	}
+
+	created, err := service.UpsertAutoCraftTask(task)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, created)
+}
+
+func HandleAutoCraftTaskDelete(c *gin.Context) {
+	itemID := c.Param("itemId")
+	if itemID == "" {
+		c.JSON(400, gin.H{"error": "missing itemId"})
+		return
+	}
+
+	if !service.DeleteAutoCraftTask(itemID) {
+		c.JSON(404, gin.H{"error": "task not found"})
+		return
+	}
+
+	c.JSON(200, gin.H{"ok": true})
+}
+
+func HandleAutoCraftTaskPatch(c *gin.Context) {
+	itemID := c.Param("itemId")
+	if itemID == "" {
+		c.JSON(400, gin.H{"error": "missing itemId"})
+		return
+	}
+
+	var req autoCraftTaskPatchRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": "invalid json"})
+		return
+	}
+
+	task, ok := service.SetAutoCraftTaskActive(itemID, req.IsActive)
+	if !ok {
+		c.JSON(404, gin.H{"error": "task not found"})
+		return
+	}
+
+	c.JSON(200, task)
 }

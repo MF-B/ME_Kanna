@@ -99,6 +99,35 @@ func UpdateWhitelist(items []string) (string, error) {
 	return version, nil
 }
 
+func EnsureWhitelistItems(items []string) (bool, string, error) {
+	currentItems, currentVersion := GetWhitelistSnapshot()
+
+	merged := make([]string, 0, len(currentItems)+len(items))
+	merged = append(merged, currentItems...)
+	merged = append(merged, items...)
+	normalizedMerged := normalizeWhitelist(merged)
+
+	if len(normalizedMerged) == len(currentItems) {
+		same := true
+		for i := range normalizedMerged {
+			if normalizedMerged[i] != currentItems[i] {
+				same = false
+				break
+			}
+		}
+		if same {
+			return false, currentVersion, nil
+		}
+	}
+
+	newVersion, err := UpdateWhitelist(normalizedMerged)
+	if err != nil {
+		return false, currentVersion, err
+	}
+
+	return true, newVersion, nil
+}
+
 func loadWhitelistFromFile(path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
