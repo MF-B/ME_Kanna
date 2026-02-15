@@ -1,10 +1,10 @@
 <template>
   <div class="factory-panel-container">
-    <div class="factory-grid">
+    <div class="factory-list">
       <div
         v-for="factory in factories"
         :key="factory.id"
-        class="factory-cell"
+        class="factory-row"
       >
         <FactoryCard
           :factory="factory"
@@ -35,11 +35,15 @@ defineEmits(['command'])
 </script>
 
 <style scoped>
-.factory-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+.factory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
   padding: 10px;
+}
+
+.factory-row {
+  width: 100%;
 }
 
 .empty-msg {

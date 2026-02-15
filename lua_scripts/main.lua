@@ -9,16 +9,23 @@ local util = require("util")
 
 local ae_device = nil
 
-local function normalizeCraftables(rawCraftables)
+local function normalizeCraftables(rawCraftables, bridge)
     local normalizedCraftables = {}
     if type(rawCraftables) ~= "table" then return normalizedCraftables end
 
     for _, craftableEntry in ipairs(rawCraftables) do
         local itemId = craftableEntry and craftableEntry.name
         if type(itemId) == "string" and itemId ~= "" then
+            -- Query current stock from ME system
+            local count = 0
+            if bridge then
+                local detail = bridge.getItem({name = itemId})
+                count = (detail and detail.count) or 0
+            end
             table.insert(normalizedCraftables, {
                 itemId = itemId,
-                itemName = craftableEntry.displayName or itemId
+                itemName = craftableEntry.displayName or itemId,
+                count = count
             })
         end
     end
@@ -66,7 +73,7 @@ local function receiveLoop(ws)
             elseif packet and packet.type == "cmd_craftables" then
                 ae_device = aeBridge.ensureBridge(ae_device)
                 if ae_device then
-                    local craftableList = normalizeCraftables(aeBridge.getCraftables(ae_device))
+                    local craftableList = normalizeCraftables(aeBridge.getCraftables(ae_device), ae_device)
                     util.sendJson(ws, packets.craftablesUpdate(config.DEVICE_ID, craftableList, packet.requestId))
                     print("Craftables sent: " .. tostring(#craftableList))
                 else

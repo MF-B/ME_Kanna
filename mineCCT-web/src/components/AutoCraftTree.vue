@@ -8,9 +8,9 @@
           <span v-if="node.count && node.count > 1" class="node-count">x{{ node.count }}</span>
         </div>
         <div class="node-sub">
-          <span>CUR: {{ formatCompact(currentCount) }}</span>
-          <span v-if="threshold" class="node-target">TARGET: {{ threshold.min }} / {{ threshold.max }}</span>
-          <span v-else class="node-target muted">NO TARGET</span>
+          <span>{{ t('CRAFT.CUR') }}: {{ formatCompact(currentCount) }}</span>
+          <span v-if="threshold" class="node-target">{{ t('CRAFT.TARGET') }}: {{ threshold.min }} / {{ threshold.max }}</span>
+          <span v-else class="node-target muted">{{ t('TREE.NO_TARGET') }}</span>
         </div>
       </div>
       <div class="node-badge">
@@ -33,6 +33,7 @@
 <script setup>
 import { computed } from 'vue'
 import ItemIcon from './ItemIcon.vue'
+import { useI18n } from '../composables/useI18n'
 
 defineOptions({ name: 'AutoCraftTree' })
 
@@ -41,6 +42,8 @@ const props = defineProps({
   inventoryIndex: { type: Object, required: true },
   taskIndex: { type: Object, required: true }
 })
+
+const { t } = useI18n()
 
 const currentCount = computed(() => {
   return props.inventoryIndex[props.node.itemId] || 0
@@ -53,10 +56,10 @@ const threshold = computed(() => {
 })
 
 const statusLabel = computed(() => {
-  if (!threshold.value) return 'NO TARGET'
-  if (currentCount.value < threshold.value.min) return 'LOW'
-  if (currentCount.value >= threshold.value.max) return 'OK'
-  return 'MID'
+  if (!threshold.value) return t('TREE.NO_TARGET')
+  if (currentCount.value < threshold.value.min) return t('TREE.LOW')
+  if (currentCount.value >= threshold.value.max) return t('TREE.OK')
+  return t('TREE.MID')
 })
 
 const statusClass = computed(() => {
@@ -87,14 +90,15 @@ function formatCompact(value) {
   grid-template-columns: auto 1fr auto;
   gap: 12px;
   align-items: center;
-  background: #000;
-  border: 2px solid #333;
+  background: var(--bg-color);
+  border: 2px solid var(--border-color);
   padding: 8px 12px;
   margin-bottom: 10px;
   transition: all 0.2s;
+  color: var(--text-color);
   
   &:hover {
-    border-color: #fff;
+    border-color: var(--primary-color);
     transform: translateX(5px);
   }
 }
@@ -111,7 +115,7 @@ function formatCompact(value) {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #fff;
+  color: var(--text-color);
   font-size: 0.9rem;
   
   span {
@@ -122,7 +126,7 @@ function formatCompact(value) {
 }
 
 .node-count {
-  color: var(--primary-color, #FFD600);
+  color: var(--primary-color);
   font-size: 0.8rem;
 }
 
@@ -138,41 +142,41 @@ function formatCompact(value) {
   font-size: 0.7rem;
   font-weight: 900;
   padding: 2px 6px;
-  background: #fff;
-  color: #000;
-  border: 2px solid #000;
+  background: var(--surface-color);
+  color: var(--text-color);
+  border: 2px solid var(--border-color);
 }
 
 /* Status variants */
 .status-low {
-  border-left: 5px solid var(--secondary-color, #FF5722);
+  border-left: 5px solid var(--secondary-color);
   
   .node-badge {
-    background: var(--secondary-color, #FF5722);
+    background: var(--secondary-color);
     color: #fff;
   }
 }
 
 .status-ok {
-  border-left: 5px solid var(--accent-color, #00E676);
+  border-left: 5px solid var(--accent-color);
   
   .node-badge {
-    background: var(--accent-color, #00E676);
+    background: var(--accent-color);
     color: #000;
   }
 }
 
 .status-mid {
-  border-left: 5px solid var(--primary-color, #FFD600);
+  border-left: 5px solid var(--primary-color);
 }
 
 .status-neutral {
-  border-left: 2px solid #333;
+  border-left: 2px solid var(--border-color);
 }
 
 .node-children {
   margin-left: 20px;
-  border-left: 2px dashed #333;
+  border-left: 2px dashed var(--border-color);
   padding-left: 10px;
 }
 </style>

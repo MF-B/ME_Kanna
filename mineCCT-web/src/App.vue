@@ -2,12 +2,10 @@
   <el-config-provider :locale="zhCn">
     <div class="brutalist-container">
       <!-- Brutalist Sidebar -->
-      <aside class="brutalist-sidebar">
+      <aside class="brutalist-sidebar" :class="{ collapsed: isCollapsed }">
         <div class="brand">
-          <h1>MINE<br><span class="highlight">CCT</span></h1>
-          <div class="status-badge" :class="{ online: connected }">
-            {{ connected ? 'ONLINE' : 'OFFLINE' }}
-          </div>
+          <h1 v-if="!isCollapsed">ME<br><span class="highlight">Kanna</span></h1>
+          <h1 v-else>M<span class="highlight">K</span></h1>
         </div>
 
         <nav class="brutalist-nav">
@@ -16,7 +14,7 @@
             :class="{ active: activeTab === 'monitor' }"
             @click="activeTab = 'monitor'"
           >
-            <span>01</span> MONITOR
+            <span>01</span> <template v-if="!isCollapsed">{{ t('NAV.MONITOR') }}</template>
           </div>
           
           <div 
@@ -24,7 +22,7 @@
             :class="{ active: activeTab === 'factory' }"
             @click="activeTab = 'factory'"
           >
-            <span>02</span> FACTORY
+            <span>02</span> <template v-if="!isCollapsed">{{ t('NAV.FACTORY') }}</template>
           </div>
 
           <div 
@@ -32,12 +30,21 @@
             :class="{ active: activeTab === 'inventory-control' }"
             @click="activeTab = 'inventory-control'"
           >
-            <span>03</span> CRAFT
+            <span>03</span> <template v-if="!isCollapsed">{{ t('NAV.CRAFT') }}</template>
           </div>
         </nav>
 
         <div class="sidebar-footer">
-          <p>SYS.VER.2.0</p>
+          <div class="collapse-btn" @click="toggleSidebar">
+            {{ isCollapsed ? '>>' : '<<' }}
+          </div>
+          <div v-if="!isCollapsed" class="footer-content">
+            <div class="lang-toggle" @click="toggleLocale">
+              <span :class="{ active: locale === 'en' }">EN</span> / 
+              <span :class="{ active: locale === 'zh' }">CN</span>
+            </div>
+            <p>SYS.VER.2.1</p>
+          </div>
         </div>
       </aside>
 
@@ -88,9 +95,16 @@ import AutoCraftPanel from './components/AutoCraft/AutoCraftPanel.vue'
 import { storeToRefs } from 'pinia'
 import { useSystemStore } from './stores/systemStore'
 import { useWebSocket } from './composables/useWebSocket'
+import { useI18n } from './composables/useI18n'
 
 const activeTab = ref('monitor')
 const systemStore = useSystemStore()
+const { t, locale, toggleLocale } = useI18n()
+const isCollapsed = ref(false)
+
+const toggleSidebar = () => {
+  isCollapsed.value = !isCollapsed.value
+}
 
 const {
   factories,
@@ -138,6 +152,16 @@ onMounted(async () => {
   } catch (err) {
     console.error(err)
   }
+
+  // Responsive sidebar: Auto-collapse on small screens
+  const mediaQuery = window.matchMedia('(max-width: 1000px)')
+  const handleResize = (e) => {
+    isCollapsed.value = e.matches
+  }
+  // Initial check
+  if (mediaQuery.matches) isCollapsed.value = true
+  // Listen
+  mediaQuery.addEventListener('change', handleResize)
 })
 </script>
 
@@ -149,16 +173,19 @@ onMounted(async () => {
 }
 
 .brand {
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px dashed var(--border-color);
   
   h1 {
     font-size: 3rem;
     line-height: 1;
-    margin-bottom: 1rem;
+    margin-bottom: 0;
+    color: var(--text-color);
     
     .highlight {
-      color: var(--primary-color);
-      background: #000;
+      color: var(--surface-color);
+      background: var(--secondary-color);
       padding: 0 5px;
     }
   }
@@ -167,15 +194,15 @@ onMounted(async () => {
 .status-badge {
   display: inline-block;
   padding: 4px 8px;
-  background: #333;
-  color: #fff;
+  background: var(--bg-color);
+  color: var(--text-color);
   font-weight: bold;
-  border: 2px solid #fff;
+  border: 2px solid var(--border-color);
   
   &.online {
     background: var(--accent-color);
-    color: #000;
-    box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+    color: #fff;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
   }
 }
 
@@ -186,16 +213,19 @@ onMounted(async () => {
 }
 
 .nav-item {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: bold;
   cursor: pointer;
-  padding: 10px;
-  border: 2px solid transparent;
-  transition: all 0.2s;
+  padding: 15px;
+  background: var(--surface-color);
+  border: 2px solid var(--border-color);
+  box-shadow: 4px 4px 0 var(--border-color);
+  transition: all 0.1s;
   text-transform: uppercase;
   display: flex;
   align-items: center;
   gap: 10px;
+  color: var(--text-color);
   
   span {
     font-size: 1rem;
@@ -203,19 +233,26 @@ onMounted(async () => {
   }
   
   &:hover {
-    padding-left: 20px;
-    color: var(--primary-color);
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 var(--border-color);
+    background: var(--primary-color);
     
-    span { color: var(--primary-color); }
+    span { color: #000; }
   }
   
   &.active {
     background: var(--primary-color);
     color: #000;
-    border: 3px solid #fff;
-    box-shadow: 6px 6px 0 #000;
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 var(--border-color);
+    border: 2px solid var(--border-color);
     
     span { color: #000; }
+  }
+  
+  &:active {
+    transform: translate(4px, 4px);
+    box-shadow: none;
   }
 }
 
@@ -223,13 +260,71 @@ onMounted(async () => {
   margin-top: auto;
   font-size: 0.8rem;
   color: #666;
-  border-top: 2px solid #333;
+  border-top: 2px solid var(--border-color);
   padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center everything */
+  gap: 10px;
+  
+  .lang-toggle {
+    cursor: pointer;
+    margin-bottom: 5px;
+    font-weight: bold;
+    
+    span {
+      padding: 0 5px;
+      &.active {
+        background: var(--text-color);
+        color: var(--surface-color);
+      }
+    }
+    
+    &:hover {
+      color: var(--primary-color);
+    }
+  }
 }
 
 .content-viewport {
   padding: 2rem;
   height: 100%;
   overflow-y: auto;
+}
+
+/* Collapsible styles */
+.brutalist-sidebar {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 300px; /* Default width */
+  overflow: hidden;
+  
+  &.collapsed {
+    width: 80px;
+    padding: 20px 10px;
+    
+    .brand h1 { font-size: 2rem; text-align: center; }
+    .nav-item { justify-content: center; padding: 15px 5px; }
+    .nav-item span { font-size: 1.2rem; color: var(--text-color); }
+    .sidebar-footer { flex-direction: column; align-items: center; }
+  }
+}
+
+.footer-content {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.collapse-btn {
+  cursor: pointer;
+  font-weight: bold;
+  padding: 5px 10px;
+  border: 2px solid var(--border-color);
+  background: var(--surface-color);
+  display: inline-block;
+  margin-bottom: 5px;
+  
+  &:hover {
+    background: var(--primary-color);
+  }
 }
 </style>

@@ -94,6 +94,7 @@ type AutoCraftTask struct {
 type CraftableItem struct {
 	ItemID   string `json:"itemId"`
 	ItemName string `json:"itemName"`
+	Count    int64  `json:"count,omitempty"`
 }
 
 // IncomingMessage 统一接收 Lua 消息

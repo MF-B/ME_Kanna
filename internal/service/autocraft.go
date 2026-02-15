@@ -43,6 +43,7 @@ func ProcessCraftablesUpdate(deviceID string, list []model.CraftableItem) {
 		next[itemID] = model.CraftableItem{
 			ItemID:   itemID,
 			ItemName: itemName,
+			Count:    item.Count,
 		}
 	}
 
@@ -53,6 +54,23 @@ func ProcessCraftablesUpdate(deviceID string, list []model.CraftableItem) {
 		autoCraftState.deviceID = strings.TrimSpace(deviceID)
 	}
 	autoCraftState.mu.Unlock()
+
+	// Broadcast to Web Clients
+	go func() {
+		items, _ := GetCraftablesSnapshot()
+		payload := model.IncomingMessage{
+			Type:       "craftables",
+			Craftables: items,
+		}
+
+		s := store.Global
+		s.Mutex.RLock()
+		defer s.Mutex.RUnlock()
+
+		for client := range s.WebClients {
+			_ = client.WriteJSON(payload)
+		}
+	}()
 }
 
 func GetCraftablesSnapshot() ([]model.CraftableItem, int64) {
@@ -75,25 +93,7 @@ func GetCraftablesSnapshot() ([]model.CraftableItem, int64) {
 		}
 	}
 
-	if len(items) > 0 {
-		return items, lastUpdated
-	}
-
-	// fallback：Lua 还没上报时，用白名单兜底，避免前端报错
-	whitelistItems, _ := GetWhitelistSnapshot()
-	fallback := make([]model.CraftableItem, 0, len(whitelistItems))
-	for _, id := range whitelistItems {
-		trimmed := strings.TrimSpace(id)
-		if trimmed == "" {
-			continue
-		}
-		displayName, err := GetItemDisplayName(trimmed)
-		if err != nil || strings.TrimSpace(displayName) == "" {
-			displayName = trimmed
-		}
-		fallback = append(fallback, model.CraftableItem{ItemID: trimmed, ItemName: displayName})
-	}
-	return fallback, lastUpdated
+	return items, lastUpdated
 }
 
 func RequestCraftablesRefresh(targetID, requestID string) bool {

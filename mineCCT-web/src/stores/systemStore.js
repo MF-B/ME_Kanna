@@ -45,6 +45,7 @@ export const useSystemStore = defineStore('system', () => {
   })
 
   const inventoryIndex = shallowRef({})
+  const itemRates = shallowRef({})
 
   const { names: itemNameMap, ensureName } = useItemNames()
 
@@ -112,8 +113,20 @@ export const useSystemStore = defineStore('system', () => {
   }
 
   function applyUpdatePayload(payload) {
+    if (payload.type === 'craftables') {
+      const list = payload.craftables || []
+      craftables.value = list.map((c) => ({
+        itemId: c.itemId,
+        itemName: c.itemName || c.itemId,
+        count: c.count || 0
+      })).filter((c) => c.itemId)
+      craftables.value.forEach((c) => ensureName(c.itemId))
+      if (craftablesLoading.value) craftablesLoading.value = false
+      return
+    }
+
     if (payload.type !== 'update') return
-    
+
     // 1. 更新基础数据
     factories.value = payload.data || []
     if (payload.system) {
@@ -122,19 +135,19 @@ export const useSystemStore = defineStore('system', () => {
 
     // 2. 批量预取 itemId 名称（去重）
     const itemIdsToFetch = new Set()
-    
+
     // 从工厂产物中收集
     factories.value.forEach(f => {
       if (f.items) {
         Object.keys(f.items).forEach(id => itemIdsToFetch.add(id))
       }
     })
-    
+
     // 从系统库存中收集
     if (payload.system?.inventory) {
       Object.keys(payload.system.inventory).forEach(id => itemIdsToFetch.add(id))
     }
-    
+
     // 执行预取
     itemIdsToFetch.forEach(id => ensureName(id))
 
@@ -142,34 +155,32 @@ export const useSystemStore = defineStore('system', () => {
     const systemInventory = payload.system?.inventory
     if (systemInventory && Object.keys(systemInventory).length > 0) {
       inventoryIndex.value = systemInventory
-      return
+      // fallthrough to calc rates
+    } else {
+      const nextIndex = {}
+      factories.value.forEach((factoryData) => {
+        const factoryItems = factoryData?.items || {}
+        Object.values(factoryItems).forEach((factoryItem) => {
+          if (factoryItem?.itemId) {
+            nextIndex[factoryItem.itemId] = factoryItem.count || 0
+          }
+        })
+      })
+      // Simple diff check omitted for brevity as we are rewriting this block
+      inventoryIndex.value = nextIndex
     }
 
-    const nextIndex = {}
+    // 4. Calculate Item Rates (Sum of prodRate from all factories)
+    const nextRates = {}
     factories.value.forEach((factoryData) => {
       const factoryItems = factoryData?.items || {}
       Object.values(factoryItems).forEach((factoryItem) => {
-        if (factoryItem?.itemId) {
-          nextIndex[factoryItem.itemId] = factoryItem.count || 0
+        if (factoryItem?.itemId && factoryItem.prodRate) {
+          nextRates[factoryItem.itemId] = (nextRates[factoryItem.itemId] || 0) + factoryItem.prodRate
         }
       })
     })
-
-    const prevIndex = inventoryIndex.value
-    const nextKeys = Object.keys(nextIndex)
-    const prevKeys = Object.keys(prevIndex)
-
-    if (nextKeys.length !== prevKeys.length) {
-      inventoryIndex.value = nextIndex
-      return
-    }
-
-    for (const k of nextKeys) {
-      if (nextIndex[k] !== prevIndex[k]) {
-        inventoryIndex.value = nextIndex
-        return
-      }
-    }
+    itemRates.value = nextRates
   }
 
   const taskIndex = computed(() => {
@@ -262,7 +273,8 @@ export const useSystemStore = defineStore('system', () => {
         }
         return {
           itemId: craftableEntry.itemId,
-          itemName: craftableEntry.itemName || craftableEntry.itemId
+          itemName: craftableEntry.itemName || craftableEntry.itemId,
+          count: craftableEntry.count || 0
         }
       }).filter((craftableEntry) => craftableEntry.itemId)
 
@@ -310,7 +322,7 @@ export const useSystemStore = defineStore('system', () => {
     recipeTree.value = null
 
     // 触发首次加载，但不要在这里抛出未处理异常（UI 上也提供了手动“刷新”按钮）
-    fetchCraftables().catch(() => {})
+    fetchCraftables().catch(() => { })
   }
 
   function closeWizard() {
@@ -398,51 +410,51 @@ export const useSystemStore = defineStore('system', () => {
   async function saveTaskThresholds() {
     if (!detailTask.value) return
     if (detailMinThreshold.value <= 0 || detailMaxThreshold.value < detailMinThreshold.value) {
-        throw new Error('阈值不合法：目标阈值必须大于等于最低阈值')
+      throw new Error('阈值不合法：目标阈值必须大于等于最低阈值')
     }
 
     detailSaving.value = true
     const abortController = new AbortController()
     const timeoutId = setTimeout(() => abortController.abort(), 8000)
     try {
-        const payload = {
+      const payload = {
         itemId: detailTask.value.itemId,
         itemName: detailTask.value.itemName,
         minThreshold: detailMinThreshold.value,
         maxThreshold: detailMaxThreshold.value,
         isActive: !!detailTask.value.isActive,
         recipeSnapshot: detailTask.value.recipeSnapshot || null
-        }
+      }
 
-        const { res, data: savedTask } = await autoCraftApi.createTask(payload, {
+      const { res, data: savedTask } = await autoCraftApi.createTask(payload, {
         signal: abortController.signal
-        })
+      })
 
-        if (!res.ok) {
+      if (!res.ok) {
         const msg = (savedTask && savedTask.error) || '保存阈值失败'
         throw new Error(msg)
-        }
+      }
 
-        if (detailTask.value && savedTask) {
+      if (detailTask.value && savedTask) {
         Object.assign(detailTask.value, {
-            itemId: savedTask.itemId,
-            itemName: savedTask.itemName || savedTask.itemId,
-            minThreshold: savedTask.minThreshold,
-            maxThreshold: savedTask.maxThreshold,
-            isActive: !!savedTask.isActive,
-            recipeSnapshot: savedTask.recipeSnapshot || detailTask.value.recipeSnapshot
+          itemId: savedTask.itemId,
+          itemName: savedTask.itemName || savedTask.itemId,
+          minThreshold: savedTask.minThreshold,
+          maxThreshold: savedTask.maxThreshold,
+          isActive: !!savedTask.isActive,
+          recipeSnapshot: savedTask.recipeSnapshot || detailTask.value.recipeSnapshot
         })
-        }
+      }
 
-        upsertTask(detailTask.value)
+      upsertTask(detailTask.value)
     } catch (err) {
-        if (err?.name === 'AbortError') {
+      if (err?.name === 'AbortError') {
         throw new Error('保存阈值超时，请稍后重试')
-        }
-        throw new Error(err.message || '保存阈值失败')
+      }
+      throw new Error(err.message || '保存阈值失败')
     } finally {
-        clearTimeout(timeoutId)
-        detailSaving.value = false
+      clearTimeout(timeoutId)
+      detailSaving.value = false
     }
   }
 
@@ -509,6 +521,7 @@ export const useSystemStore = defineStore('system', () => {
     detailSaving,
     systemStatus,
     inventoryIndex,
+    itemRates,
     taskIndex,
     energyPercent,
     energyColor,

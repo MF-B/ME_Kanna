@@ -55,10 +55,21 @@ export function useSystemData() {
   }
 
   function applyUpdatePayload(payload) {
-    if (payload.type !== 'update') return
-    factories.value = payload.data || []
-    if (payload.system) {
-      systemStatus.value = payload.system
+    if (payload.type === 'update') {
+      factories.value = payload.data || []
+      if (payload.system) {
+        systemStatus.value = payload.system
+      }
+    } else if (payload.type === 'craftables') {
+      const list = payload.craftables || []
+      craftables.value = list.map((craftableEntry) => ({
+        itemId: craftableEntry.itemId,
+        itemName: craftableEntry.itemName || craftableEntry.itemId,
+        count: craftableEntry.count || 0
+      })).filter((c) => c.itemId)
+
+      craftables.value.forEach((c) => ensureName(c.itemId))
+      if (craftablesLoading.value) craftablesLoading.value = false
     }
   }
 
@@ -268,9 +279,9 @@ export function useSystemData() {
   function upsertTask(task) {
     const index = autoCraftTasks.value.findIndex((t) => t.itemId === task.itemId)
     if (index >= 0) {
-        Object.assign(autoCraftTasks.value[index], task)
+      Object.assign(autoCraftTasks.value[index], task)
     } else {
-        autoCraftTasks.value.push(task)
+      autoCraftTasks.value.push(task)
     }
     ensureName(task.itemId)
   }
@@ -364,7 +375,7 @@ export function useSystemData() {
           if (errorData?.error) {
             message = `保存阈值失败: ${errorData.error}`
           }
-        } catch (_ignore) {}
+        } catch (_ignore) { }
         ElMessage.error(message)
         return
       }
@@ -382,7 +393,7 @@ export function useSystemData() {
         })
       }
       if (typeof upsertTask === 'function') {
-         upsertTask(detailTask.value) 
+        upsertTask(detailTask.value)
       }
       ElMessage.success('阈值已更新')
     } catch (error) {
