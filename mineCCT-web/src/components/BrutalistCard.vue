@@ -8,7 +8,6 @@
     <div class="card-content">
       <slot></slot>
     </div>
-    <div class="card-decoration"></div>
   </div>
 </template>
 
@@ -42,7 +41,10 @@ onMounted(() => {
       rotationX: 0,
       duration: 0.6, 
       delay: props.delay,
-      ease: "power3.out" 
+      ease: "power3.out",
+      onComplete: () => {
+        gsap.set(cardRef.value, { clearProps: 'transform' })
+      } 
     }
   )
 })
@@ -50,38 +52,31 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .brutalist-card {
-  background: var(--surface-color, #1a1a1a);
-  border: 3px solid var(--border-color, #fff);
+  background: var(--surface-color);
+  border: 3px solid var(--border-color);
   padding: 1.5rem;
   position: relative;
   margin-bottom: 2rem;
-  box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
-  transition: transform 0.2s;
+  box-shadow: 4px 4px 0 #888; /* Match sidebar button shadow size */
+  transition: all 0.1s;
+  color: var(--text-color);
 }
 
 .brutalist-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 10px 10px 0 var(--primary-color, #FFD600);
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 #888;
 }
 
 .card-title {
   font-size: 1.2rem;
   margin-bottom: 1rem;
-  border-bottom: 2px solid var(--border-color, #fff);
+  border-bottom: 2px solid var(--border-color);
   padding-bottom: 0.5rem;
   display: inline-block;
-  background: var(--primary-color, #FFD600);
+  background: var(--primary-color);
   color: #000;
   padding: 0.2rem 0.5rem;
 }
 
-.card-decoration {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 10px;
-  height: 10px;
-  background: var(--secondary-color, #FF5722);
-  border: 1px solid #000;
-}
+
 </style>

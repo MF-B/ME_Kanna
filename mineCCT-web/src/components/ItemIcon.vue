@@ -76,12 +76,21 @@ const formatCount = (val) => {
 
 .item-count {
   position: absolute;
-  bottom: -2px;
-  right: -2px;
+  bottom: -1px;
+  right: -4px;
   color: #ffffff;
-  font-family: 'zpix', sans-serif;
-  font-size: 12px;
-  text-shadow: 1px 1px 0px #3f3f3f;
+  font-family: var(--font-nums);
+  font-size: 1rem;
+  line-height: 1;
+  text-shadow: 
+    -1.5px -1.5px 0 #5d4037,  
+     1.5px -1.5px 0 #5d4037,
+    -1.5px  1.5px 0 #5d4037,
+     1.5px  1.5px 0 #5d4037,
+    -1.5px 0 0 #5d4037,
+     1.5px 0 0 #5d4037,
+     0 -1.5px 0 #5d4037,
+     0 1.5px 0 #5d4037;
   pointer-events: none;
   z-index: 2;
 }
