@@ -1,83 +1,77 @@
 <template>
   <el-config-provider :locale="zhCn">
-    <div class="ae2-sidebar-container">
-      <!-- 左侧 AE2 侧边栏 -->
-      <aside class="ae2-sidebar">
-        <el-tooltip content="监控面板" placement="right" popper-class="ae2-tooltip">
+    <div class="brutalist-container">
+      <!-- Brutalist Sidebar -->
+      <aside class="brutalist-sidebar">
+        <div class="brand">
+          <h1>MINE<br><span class="highlight">CCT</span></h1>
+          <div class="status-badge" :class="{ online: connected }">
+            {{ connected ? 'ONLINE' : 'OFFLINE' }}
+          </div>
+        </div>
+
+        <nav class="brutalist-nav">
           <div 
-            class="ae2-side-button" 
-            :class="{ 'is-active': activeTab === 'monitor' }"
+            class="nav-item" 
+            :class="{ active: activeTab === 'monitor' }"
             @click="activeTab = 'monitor'"
           >
-            <el-icon><Monitor /></el-icon>
+            <span>01</span> MONITOR
           </div>
-        </el-tooltip>
-
-        <el-tooltip content="工厂面板" placement="right" popper-class="ae2-tooltip">
+          
           <div 
-            class="ae2-side-button" 
-            :class="{ 'is-active': activeTab === 'factory' }"
+            class="nav-item" 
+            :class="{ active: activeTab === 'factory' }"
             @click="activeTab = 'factory'"
           >
-            <el-icon><OfficeBuilding /></el-icon>
+            <span>02</span> FACTORY
           </div>
-        </el-tooltip>
 
-        <el-tooltip content="库存控制" placement="right" popper-class="ae2-tooltip">
           <div 
-            class="ae2-side-button" 
-            :class="{ 'is-active': activeTab === 'inventory-control' }"
+            class="nav-item" 
+            :class="{ active: activeTab === 'inventory-control' }"
             @click="activeTab = 'inventory-control'"
           >
-            <el-icon><Box /></el-icon>
+            <span>03</span> CRAFT
           </div>
-        </el-tooltip>
+        </nav>
+
+        <div class="sidebar-footer">
+          <p>SYS.VER.2.0</p>
+        </div>
       </aside>
 
-      <!-- 右侧主面板区 -->
-      <main class="ae2-main-content">
-        <div class="mc-panel dashboard-main">
-          <header class="dashboard-header">
-            <h1 class="header-title">
-              {{ activeTab === 'monitor' ? 'ME 监控终端' : activeTab === 'factory' ? 'ME 工厂终端' : 'ME 合成终端' }}
-            </h1>
-            <div class="status-indicator">
-              <span class="status-text" :class="{ online: connected }">
-                {{ connected ? 'ONLINE' : 'OFFLINE' }}
-              </span>
-            </div>
-          </header>
+      <!-- Main Content -->
+      <main class="brutalist-main">
+        <div class="content-viewport">
+          <SystemOverview
+            v-if="activeTab === 'monitor'"
+            :system-status="systemStatus"
+            :energy-percent="energyPercent"
+            :energy-color="energyColor"
+            :storage-percent="storagePercent"
+            :storage-total-used="storageTotalUsed"
+            :storage-total-capacity="storageTotalCapacity"
+            :storage-internal-ratio="storageInternalRatio"
+            :storage-external-ratio="storageExternalRatio"
+            :storage-internal-usage="storageInternalUsage"
+            :storage-external-usage="storageExternalUsage"
+            :net-rate-class="netRateClass"
+            :format-compact="formatCompact"
+            :format-rate="formatRate"
+            :format-time="formatTime"
+          />
 
-          <div class="content-viewport">
-            <SystemOverview
-              v-if="activeTab === 'monitor'"
-              :system-status="systemStatus"
-              :energy-percent="energyPercent"
-              :energy-color="energyColor"
-              :storage-percent="storagePercent"
-              :storage-total-used="storageTotalUsed"
-              :storage-total-capacity="storageTotalCapacity"
-              :storage-internal-ratio="storageInternalRatio"
-              :storage-external-ratio="storageExternalRatio"
-              :storage-internal-usage="storageInternalUsage"
-              :storage-external-usage="storageExternalUsage"
-              :net-rate-class="netRateClass"
-              :format-compact="formatCompact"
-              :format-rate="formatRate"
-              :format-time="formatTime"
-            />
+          <FactoryPanel 
+            v-else-if="activeTab === 'factory'"
+            :connected="connected" 
+            :factories="factories" 
+            @command="handleCommand" 
+          />
 
-            <FactoryPanel 
-              v-else-if="activeTab === 'factory'"
-              :connected="connected" 
-              :factories="factories" 
-              @command="handleCommand" 
-            />
-
-            <AutoCraftPanel 
-              v-else-if="activeTab === 'inventory-control'"
-            />
-          </div>
+          <AutoCraftPanel 
+            v-else-if="activeTab === 'inventory-control'"
+          />
         </div>
       </main>
     </div>
@@ -96,7 +90,6 @@ import { useSystemStore } from './stores/systemStore'
 import { useWebSocket } from './composables/useWebSocket'
 
 const activeTab = ref('monitor')
-
 const systemStore = useSystemStore()
 
 const {
@@ -124,36 +117,119 @@ const {
 
 const { connected, connect, send } = useWebSocket({
   onUpdate: applyUpdatePayload,
-  onOpen: () => ElMessage.success('已连接到控制中心'),
+  onOpen: () => ElMessage.success('SYSTEM ONLINE'),
   onClose: () => {
     systemStore.resetFactories()
+    ElMessage.warning('SYSTEM OFFLINE')
   }
 })
 
-// --- 发送指令 ---
 const handleCommand = (payload) => {
   if (!send(payload)) {
-    ElMessage.error('网络未连接，无法发送指令')
+    ElMessage.error('CONNECTION_ERROR')
     return
   }
 }
 
 onMounted(async () => {
-  document.documentElement.classList.add('dark')
   connect()
   try {
     await loadAutoCraftTasks()
   } catch (err) {
-    ElMessage.error(err.message || '加载自动合成任务失败')
+    console.error(err)
   }
 })
 </script>
 
-<style>
-/* 样式已迁移至 assets/base.css 和 assets/main.css，此处保持精简 */
-body {
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
+<style scoped lang="scss">
+.brutalist-container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+}
+
+.brand {
+  margin-bottom: 3rem;
+  
+  h1 {
+    font-size: 3rem;
+    line-height: 1;
+    margin-bottom: 1rem;
+    
+    .highlight {
+      color: var(--primary-color);
+      background: #000;
+      padding: 0 5px;
+    }
+  }
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  background: #333;
+  color: #fff;
+  font-weight: bold;
+  border: 2px solid #fff;
+  
+  &.online {
+    background: var(--accent-color);
+    color: #000;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+  }
+}
+
+.brutalist-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.nav-item {
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 10px;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  
+  span {
+    font-size: 1rem;
+    color: #666;
+  }
+  
+  &:hover {
+    padding-left: 20px;
+    color: var(--primary-color);
+    
+    span { color: var(--primary-color); }
+  }
+  
+  &.active {
+    background: var(--primary-color);
+    color: #000;
+    border: 3px solid #fff;
+    box-shadow: 6px 6px 0 #000;
+    
+    span { color: #000; }
+  }
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  font-size: 0.8rem;
+  color: #666;
+  border-top: 2px solid #333;
+  padding-top: 10px;
+}
+
+.content-viewport {
+  padding: 2rem;
+  height: 100%;
+  overflow-y: auto;
 }
 </style>

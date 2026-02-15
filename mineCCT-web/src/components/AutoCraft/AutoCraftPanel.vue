@@ -1,196 +1,167 @@
 <template>
-  <section class="panel-section">
+  <div class="autocraft-panel">
     <div class="task-list-container">
       <div
-        v-for="task in autoCraftTasks"
+        v-for="(task, index) in autoCraftTasks"
         :key="task.itemId"
-        class="ae2-slot-row task-item"
+        class="task-ticket"
+        :class="{ pulse: !task.isActive }"
         @click="openTaskDetail(task)"
+        :style="{ animationDelay: index * 0.1 + 's' }"
       >
-        <ItemIcon :item-id="task.itemId" />
-        <div class="task-meta">
-          <div class="name">{{ displayItemName(task.itemId, task.itemName) }}</div>
-          <div class="id">{{ task.itemId }}</div>
+        <div class="ticket-stub">
+          <ItemIcon :item-id="task.itemId" class="task-icon" />
+          <div class="ticket-id">#{{ index + 1 }}</div>
         </div>
         
-        <div class="task-stats-group">
-          <div class="stat-pill">
-            <span class="label">库存</span>
-            <span class="value">{{ formatCompact(inventoryIndex[task.itemId] || 0) }}</span>
+        <div class="ticket-body">
+          <div class="ticket-header">
+            <h3>{{ displayItemName(task.itemId, task.itemName) }}</h3>
+            <span class="item-id-code">{{ task.itemId }}</span>
           </div>
-          <div class="stat-pill">
-            <span class="label">阈值</span>
-            <span class="value">{{ task.minThreshold }} / {{ task.maxThreshold }}</span>
+          
+          <div class="ticket-stats">
+            <div class="stat-box">
+              <span class="lbl">STOCK</span>
+              <span class="val">{{ formatCompact(inventoryIndex[task.itemId] || 0) }}</span>
+            </div>
+            <div class="stat-box">
+              <span class="lbl">TARGET</span>
+              <span class="val">{{ task.minThreshold }} / {{ task.maxThreshold }}</span>
+            </div>
           </div>
         </div>
 
-        <div class="task-actions" @click.stop>
-          <el-switch
-            :model-value="task.isActive"
-            inline-prompt
-            active-text="ON"
-            inactive-text="OFF"
-            @change="(value) => onActiveChange(task, value)"
-          />
-          <el-button link type="danger" @click="handleDeleteTask(task.itemId)">
-            <el-icon><Delete /></el-icon>
-          </el-button>
+        <div class="ticket-actions" @click.stop>
+          <div class="b-switch-mini" :class="{ active: task.isActive }" @click="onActiveChange(task, !task.isActive)"></div>
+          <button class="b-btn-danger" @click="handleDeleteTask(task.itemId)">X</button>
         </div>
       </div>
     </div>
 
     <el-empty
       v-if="autoCraftTasks.length === 0"
-      description="无活跃合成任务"
+      description="NO TASKS ACTIVE"
+      class="brutalist-empty"
     />
 
-    <teleport to="body">
-      <el-button class="fab-button ae2-side-button" type="primary" @click="openWizard">
-        <span class="fab-icon">+</span>
-      </el-button>
-    </teleport>
+    <!-- FAB -->
+    <button class="brutalist-fab" @click="openWizard">
+      +
+    </button>
 
-    <!-- 向导弹窗重构 -->
+    <!-- Dialogs -->
     <el-dialog
       :model-value="wizardVisible"
       @update:model-value="updateWizardVisible"
       width="640px"
-      class="autocraft-dialog"
+      class="brutalist-dialog"
       :append-to-body="true"
-      :close-on-click-modal="false"
     >
       <template #header>
-        <div class="dialog-header">
-          <div class="dialog-title">新建合成任务</div>
-        </div>
+        <div class="b-dialog-header">NEW TASK</div>
       </template>
 
-      <div class="wizard-body" v-if="wizardStep === 1">
-        <div class="wizard-toolbar" style="margin-bottom: 15px;">
-          <el-input :model-value="craftableQuery" @update:model-value="updateCraftableQuery" placeholder="搜索物品..." clearable />
-          <el-button :loading="craftablesLoading" @click="handleFetchCraftables">刷新</el-button>
+      <div v-if="wizardStep === 1">
+        <div class="b-toolbar">
+          <el-input :model-value="craftableQuery" @update:model-value="updateCraftableQuery" placeholder="SEARCH ITEM..." clearable />
+          <el-button @click="handleFetchCraftables">REFRESH</el-button>
         </div>
         
-        <div class="ae2-slot-grid craftable-grid-viewport">
-          <el-tooltip
+        <div class="bg-grid">
+          <div
             v-for="item in filteredCraftables"
             :key="item.itemId"
-            effect="dark"
-            popper-class="ae2-tooltip"
-            placement="top"
+            class="grid-cell"
+            :class="{ selected: selectedCraftable && selectedCraftable.itemId === item.itemId }"
+            @click="selectCraftable(item)"
           >
-            <template #content>
-              <div class="tooltip-name">{{ displayItemName(item.itemId, item.itemName) }}</div>
-              <div class="tooltip-id">{{ item.itemId }}</div>
-            </template>
-            <div
-              class="ae2-slot-cell"
-              :class="{ 'is-selected': selectedCraftable && selectedCraftable.itemId === item.itemId }"
-              @click="selectCraftable(item)"
-            >
-              <ItemIcon :item-id="item.itemId" :count="inventoryIndex[item.itemId] || 0" />
-            </div>
-          </el-tooltip>
-        </div>
-        <div class="selection-info" v-if="selectedCraftable" style="margin-top: 10px;">
-          当前选择: <span class="text-purple">{{ displayItemName(selectedCraftable.itemId, selectedCraftable.itemName) }}</span>
+            <ItemIcon :item-id="item.itemId" :count="inventoryIndex[item.itemId] || 0" />
+          </div>
         </div>
       </div>
 
-      <div class="wizard-body" v-else-if="wizardStep === 2">
-        <div class="wizard-summary">
+      <div v-else-if="wizardStep === 2">
+        <div class="b-summary">
           <ItemIcon :item-id="selectedCraftable?.itemId" />
-          <div>
-            <div class="name">{{ displayItemName(selectedCraftable?.itemId, selectedCraftable?.itemName) }}</div>
-            <div class="id">{{ selectedCraftable?.itemId }}</div>
+          <div class="info">
+             <h4>{{ displayItemName(selectedCraftable?.itemId, selectedCraftable?.itemName) }}</h4>
+             <p>{{ selectedCraftable?.itemId }}</p>
           </div>
         </div>
-        <div class="threshold-grid">
-          <div class="threshold-item">
-            <div class="label">最低触发阈值</div>
-            <el-input-number :model-value="minThreshold" @update:model-value="updateMinThreshold" :min="1" :step="1" />
-          </div>
-          <div class="threshold-item">
-            <div class="label">补货目标阈值</div>
-            <el-input-number :model-value="maxThreshold" @update:model-value="updateMaxThreshold" :min="1" :step="1" />
-          </div>
+        
+        <div class="b-inputs">
+           <div class="inp-grp">
+             <label>MIN THRESHOLD</label>
+             <el-input-number :model-value="minThreshold" @update:model-value="updateMinThreshold" :min="1" />
+           </div>
+           <div class="inp-grp">
+             <label>MAX THRESHOLD</label>
+             <el-input-number :model-value="maxThreshold" @update:model-value="updateMaxThreshold" :min="1" />
+           </div>
         </div>
-        <div class="threshold-hint">默认建议: 最低 64，目标 256</div>
       </div>
 
       <template #footer>
-        <div class="wizard-footer">
-          <el-button @click="closeWizard">取消</el-button>
-          <el-button v-if="wizardStep > 1" @click="prevWizardStep">上一步</el-button>
-          <el-button
-            v-if="wizardStep < 2"
-            type="primary"
-            :disabled="wizardStep === 1 && !selectedCraftable"
-            @click="nextWizardStep"
-          >
-            下一步
-          </el-button>
-          <el-button
-            v-if="wizardStep === 2"
-            type="primary"
-            :loading="recipeLoading"
-            @click="handleFinishWizard"
-          >
-            创建任务
-          </el-button>
+        <div class="b-footer">
+          <el-button @click="closeWizard">CANCEL</el-button>
+          <div class="actions">
+            <el-button v-if="wizardStep > 1" @click="prevWizardStep">BACK</el-button>
+            <el-button
+              v-if="wizardStep < 2"
+              type="primary"
+              :disabled="wizardStep === 1 && !selectedCraftable"
+              @click="nextWizardStep"
+            >NEXT</el-button>
+            <el-button
+              v-if="wizardStep === 2"
+              type="primary"
+              :loading="recipeLoading"
+              @click="handleFinishWizard"
+            >CREATE</el-button>
+          </div>
         </div>
       </template>
     </el-dialog>
 
+    <!-- Detail Dialog -->
     <el-dialog
       :model-value="detailVisible"
       @update:model-value="updateDetailVisible"
       width="860px"
-      class="autocraft-detail-dialog"
+      class="brutalist-dialog"
       :append-to-body="true"
     >
-      <template #header>
-        <div class="dialog-header">
-          <div class="dialog-title">任务详情</div>
-          <div class="dialog-subtitle">可直接调整阈值并查看依赖树</div>
-        </div>
-      </template>
-
-      <div v-if="detailTask" class="detail-editor">
-        <div class="wizard-summary">
-          <ItemIcon :item-id="detailTask.itemId" />
-          <div>
-            <div class="name">{{ displayItemName(detailTask.itemId, detailTask.itemName) }}</div>
-            <div class="id">{{ detailTask.itemId }}</div>
+       <!-- (Simplified for brevity, reusing logic) -->
+       <template #header><div class="b-dialog-header">TASK DETAILS</div></template>
+       
+       <div v-if="detailTask" class="detail-content">
+          <div class="b-summary">
+             <ItemIcon :item-id="detailTask.itemId" />
+             <div class="info">
+                <h4>{{ displayItemName(detailTask.itemId, detailTask.itemName) }}</h4>
+                <p>{{ detailTask.itemId }}</p>
+             </div>
           </div>
-        </div>
-
-        <div class="threshold-grid">
-          <div class="threshold-item">
-            <div class="label">最低触发阈值</div>
-            <el-input-number :model-value="detailMinThreshold" @update:model-value="updateDetailMinThreshold" :min="1" :step="1" />
+          
+          <div class="b-inputs">
+             <div class="inp-grp">
+               <label>MIN</label>
+               <el-input-number :model-value="detailMinThreshold" @update:model-value="updateDetailMinThreshold" />
+             </div>
+             <div class="inp-grp">
+               <label>MAX</label>
+               <el-input-number :model-value="detailMaxThreshold" @update:model-value="updateDetailMaxThreshold" />
+             </div>
+             <el-button type="primary" :loading="detailSaving" @click="handleSaveTaskThresholds">SAVE</el-button>
           </div>
-          <div class="threshold-item">
-            <div class="label">补货目标阈值</div>
-            <el-input-number :model-value="detailMaxThreshold" @update:model-value="updateDetailMaxThreshold" :min="1" :step="1" />
+
+          <div v-if="detailTask && detailTask.recipeSnapshot" class="tree-view">
+             <AutoCraftTree :node="detailTask.recipeSnapshot" :inventory-index="inventoryIndex" :task-index="taskIndex" />
           </div>
-        </div>
-
-        <div class="detail-actions">
-          <el-button type="primary" :loading="detailSaving" @click="handleSaveTaskThresholds">保存阈值</el-button>
-        </div>
-      </div>
-
-      <div v-if="detailTask && detailTask.recipeSnapshot" class="tree-panel">
-        <AutoCraftTree
-          :node="detailTask.recipeSnapshot"
-          :inventory-index="inventoryIndex"
-          :task-index="taskIndex"
-        />
-      </div>
-      <el-empty v-else description="还没有合成配方数据" />
+       </div>
     </el-dialog>
-  </section>
+  </div>
 </template>
 
 <script setup>
@@ -202,7 +173,6 @@ import AutoCraftTree from '../AutoCraftTree.vue'
 
 const systemStore = useSystemStore()
 
-// 使用 storeToRefs 获取响应式状态
 const {
   autoCraftTasks,
   inventoryIndex,
@@ -223,7 +193,6 @@ const {
   detailSaving
 } = storeToRefs(systemStore)
 
-// 直接从 store 获取方法，引用极其稳定
 const {
   formatCompact,
   displayItemName,
@@ -248,162 +217,214 @@ const {
 } = systemStore
 
 async function handleFetchCraftables() {
-  try {
-    await _fetchCraftables()
-  } catch (err) {
-    ElMessage.error(err.message || '刷新列表失败')
-  }
+  try { await _fetchCraftables() } catch (err) { ElMessage.error(err.message) }
 }
-
 async function handleFinishWizard() {
-  try {
-    await _finishWizard()
-  } catch (err) {
-    ElMessage.error(err.message || '创建任务失败')
-  }
+  try { await _finishWizard() } catch (err) { ElMessage.error(err.message) }
 }
-
 async function handleSaveTaskThresholds() {
-  try {
-    await _saveTaskThresholds()
-    ElMessage.success('阈值已更新')
-  } catch (err) {
-    ElMessage.error(err.message || '保存失败')
-  }
+  try { await _saveTaskThresholds(); ElMessage.success('UPDATED') } catch (err) { ElMessage.error(err.message) }
 }
-
 async function handleDeleteTask(itemId) {
-  try {
-    await _deleteTask(itemId)
-    ElMessage.success('任务已删除')
-  } catch (err) {
-    ElMessage.error(err.message || '删除失败')
-  }
+  try { await _deleteTask(itemId); ElMessage.success('DELETED') } catch (err) { ElMessage.error(err.message) }
 }
-
 async function onActiveChange(task, value) {
-  try {
-    await _handleTaskActiveChange(task, value)
-  } catch (err) {
-    ElMessage.error(err.message || '更新状态失败')
-  }
+  try { await _handleTaskActiveChange(task, value) } catch (err) { ElMessage.error(err.message) }
 }
 
-function updateCraftableQuery(value) {
-  setCraftableQuery(value)
-}
-
-function updateMinThreshold(value) {
-  setMinThreshold(value)
-}
-
-function updateMaxThreshold(value) {
-  setMaxThreshold(value)
-}
-
-function updateDetailMinThreshold(value) {
-  setDetailMinThreshold(value)
-}
-
-function updateDetailMaxThreshold(value) {
-  setDetailMaxThreshold(value)
-}
-
-function updateWizardVisible(value) {
-  setWizardVisible(value)
-}
-
-function updateDetailVisible(value) {
-  setDetailVisible(value)
-}
+// Proxies
+const updateCraftableQuery = (v) => setCraftableQuery(v)
+const updateMinThreshold = (v) => setMinThreshold(v)
+const updateMaxThreshold = (v) => setMaxThreshold(v)
+const updateDetailMinThreshold = (v) => setDetailMinThreshold(v)
+const updateDetailMaxThreshold = (v) => setDetailMaxThreshold(v)
+const updateWizardVisible = (v) => setWizardVisible(v)
+const updateDetailVisible = (v) => setDetailVisible(v)
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .task-list-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 15px;
 }
 
-.task-item {
+.task-ticket {
+  display: flex;
+  background: var(--surface-color);
+  border: 2px solid #fff;
+  transition: all 0.2s;
   cursor: pointer;
-  transition: border-color 0.2s;
+  animation: slideIn 0.3s forwards;
+  opacity: 0;
+  transform: translateX(-20px);
+  
+  &:hover {
+    transform: translateX(5px);
+    box-shadow: 6px 6px 0 var(--primary-color);
+  }
 }
 
-.task-item:hover {
-  border-color: #ffffff;
+@keyframes slideIn {
+  to { opacity: 1; transform: translateX(0); }
 }
 
-.task-meta {
-  flex: 1;
+.ticket-stub {
+  width: 60px;
+  border-right: 2px dashed #fff;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  background: #000;
+  
+  .ticket-id {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 5px;
+  }
 }
 
-.task-meta .name {
+.ticket-body {
+  flex: 1;
+  padding: 15px;
+}
+
+.ticket-header {
+  margin-bottom: 10px;
+  h3 { margin: 0; font-size: 1.1rem; }
+  .item-id-code { font-size: 0.7rem; color: #888; font-family: monospace; }
+}
+
+.ticket-stats {
+  display: flex;
+  gap: 20px;
+  
+  .stat-box {
+    display: flex;
+    flex-direction: column;
+    
+    .lbl { font-size: 0.7rem; color: #666; }
+    .val { font-weight: bold; }
+  }
+}
+
+.ticket-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 10px;
+  gap: 10px;
+  border-left: 2px solid #fff;
+  background: #000;
+}
+
+.b-switch-mini {
+  width: 30px;
+  height: 15px;
+  border: 2px solid #fff;
+  background: #333;
+  cursor: pointer;
+  
+  &.active { background: var(--accent-color); }
+}
+
+.b-btn-danger {
+  background: transparent;
+  border: 2px solid var(--secondary-color);
+  color: var(--secondary-color);
   font-weight: bold;
-  color: var(--ae2-text);
+  cursor: pointer;
+  
+  &:hover {
+    background: var(--secondary-color);
+    color: #000;
+  }
 }
 
-.task-meta .id {
-  font-size: 0.75rem;
-  color: #666;
+.brutalist-fab {
+  position: fixed;
+  right: 40px;
+  bottom: 40px;
+  width: 60px;
+  height: 60px;
+  background: var(--primary-color);
+  color: #000;
+  border: 3px solid #fff;
+  font-size: 2rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 6px 6px 0 #000;
+  transition: all 0.2s;
+  
+  &:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0 #000;
+  }
 }
 
-.task-stats-group {
+/* Dialog partials */
+.b-dialog-header {
+  font-size: 1.5rem;
+  font-weight: 900;
+  border-bottom: 3px solid var(--primary-color);
+  padding-bottom: 10px;
+}
+
+.b-toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.bg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: 2px;
+  background: #333;
+  padding: 2px;
+  border: 2px solid #fff;
+  max-height: 400px;
+  overflow-y: auto;
+  
+  .grid-cell {
+    aspect-ratio: 1;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 1px solid transparent;
+    
+    &:hover { border-color: #fff; }
+    &.selected { border-color: var(--primary-color); background: #333; }
+  }
+}
+
+.b-summary {
   display: flex;
   gap: 15px;
-  margin: 0 20px;
-}
-
-.stat-pill {
-  display: flex;
-  flex-direction: column;
   align-items: center;
+  background: #000;
+  border: 2px solid #fff;
+  padding: 15px;
+  margin-bottom: 20px;
+  
+  .info h4 { margin: 0; }
+  .info p { margin: 0; color: #888; font-size: 0.8rem; }
 }
 
-.stat-pill .label {
-  font-size: 0.7rem;
-  color: #777;
-  text-transform: uppercase;
-}
-
-.stat-pill .value {
-  font-weight: bold;
-  color: var(--ae2-purple);
-}
-
-.task-actions {
+.b-inputs {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  gap: 20px;
+  margin-bottom: 20px;
+  
+  .inp-grp { flex: 1; }
 }
 
-.craftable-grid-viewport {
-  height: 300px;
-  overflow-y: auto;
-  align-content: flex-start;
-}
-
-.autocraft-title {
+.b-footer {
   display: flex;
-  flex-direction: column;
-}
-
-.autocraft-title .name {
-  font-weight: bold;
-  font-size: 1.1rem;
-}
-
-.panel-subtitle {
-  font-size: 0.8rem;
-  color: #666;
-}
-
-.fab-button {
-  position: fixed;
-  right: 36px;
-  bottom: 36px;
-  z-index: 100;
+  justify-content: space-between;
 }
 </style>

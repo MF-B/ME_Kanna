@@ -8,12 +8,12 @@
           <span v-if="node.count && node.count > 1" class="node-count">x{{ node.count }}</span>
         </div>
         <div class="node-sub">
-          <span>现有 {{ formatCompact(currentCount) }}</span>
-          <span v-if="threshold" class="node-target">目标 {{ threshold.min }} / {{ threshold.max }}</span>
-          <span v-else class="node-target muted">未设置目标</span>
+          <span>CUR: {{ formatCompact(currentCount) }}</span>
+          <span v-if="threshold" class="node-target">TARGET: {{ threshold.min }} / {{ threshold.max }}</span>
+          <span v-else class="node-target muted">NO TARGET</span>
         </div>
       </div>
-      <div class="node-badge" :class="statusClass">
+      <div class="node-badge">
         {{ statusLabel }}
       </div>
     </div>
@@ -76,10 +76,10 @@ function formatCompact(value) {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .tree-node {
   position: relative;
-  padding-left: 18px;
+  padding-left: 20px;
 }
 
 .node-row {
@@ -87,86 +87,92 @@ function formatCompact(value) {
   grid-template-columns: auto 1fr auto;
   gap: 12px;
   align-items: center;
-  background: rgba(16, 19, 28, 0.7);
-  border: 1px solid rgba(120, 130, 170, 0.2);
-  border-radius: 12px;
-  padding: 10px 14px;
+  background: #000;
+  border: 2px solid #333;
+  padding: 8px 12px;
   margin-bottom: 10px;
+  transition: all 0.2s;
+  
+  &:hover {
+    border-color: #fff;
+    transform: translateX(5px);
+  }
 }
 
 .node-meta {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
 }
 
 .node-title {
-  font-weight: 600;
+  font-weight: 700;
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #eef2ff;
-}
-
-.node-title span {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: #fff;
+  font-size: 0.9rem;
+  
+  span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 .node-count {
-  color: #9ae6b4;
-  font-size: 0.85rem;
+  color: var(--primary-color, #FFD600);
+  font-size: 0.8rem;
 }
 
 .node-sub {
   display: flex;
   gap: 12px;
-  font-size: 0.8rem;
-  color: #a0aec0;
-}
-
-.node-target.muted {
-  color: #6b7280;
+  font-size: 0.75rem;
+  color: #888;
+  font-family: monospace;
 }
 
 .node-badge {
   font-size: 0.7rem;
-  letter-spacing: 1px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  text-transform: uppercase;
-  border: 1px solid transparent;
+  font-weight: 900;
+  padding: 2px 6px;
+  background: #fff;
+  color: #000;
+  border: 2px solid #000;
 }
 
-.status-low .node-badge {
-  background: rgba(255, 107, 107, 0.2);
-  border-color: rgba(255, 107, 107, 0.5);
-  color: #ff6b6b;
+/* Status variants */
+.status-low {
+  border-left: 5px solid var(--secondary-color, #FF5722);
+  
+  .node-badge {
+    background: var(--secondary-color, #FF5722);
+    color: #fff;
+  }
 }
 
-.status-mid .node-badge {
-  background: rgba(255, 193, 7, 0.18);
-  border-color: rgba(255, 193, 7, 0.4);
-  color: #f8c04b;
+.status-ok {
+  border-left: 5px solid var(--accent-color, #00E676);
+  
+  .node-badge {
+    background: var(--accent-color, #00E676);
+    color: #000;
+  }
 }
 
-.status-ok .node-badge {
-  background: rgba(61, 214, 165, 0.2);
-  border-color: rgba(61, 214, 165, 0.5);
-  color: #3dd6a5;
+.status-mid {
+  border-left: 5px solid var(--primary-color, #FFD600);
 }
 
-.status-neutral .node-badge {
-  background: rgba(148, 163, 184, 0.15);
-  border-color: rgba(148, 163, 184, 0.35);
-  color: #94a3b8;
+.status-neutral {
+  border-left: 2px solid #333;
 }
 
 .node-children {
-  margin-left: 18px;
-  border-left: 1px dashed rgba(148, 163, 184, 0.4);
-  padding-left: 16px;
+  margin-left: 20px;
+  border-left: 2px dashed #333;
+  padding-left: 10px;
 }
 </style>

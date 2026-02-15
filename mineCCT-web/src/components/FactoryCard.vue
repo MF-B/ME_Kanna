@@ -1,79 +1,70 @@
 <template>
-  <el-card
-    class="factory-card factory-card-ae2"
-    :class="{ 'is-active': factory.isActive }"
-    shadow="never"
-    @click="openSettings"
-  >
-    <div class="ae2-header-bar">
-      <div class="title-group">
-        <div class="title-text">
-          <span class="factory-name">{{ factory.name }}</span>
-          <span class="factory-id">ID: {{ factory.id }}</span>
+  <BrutalistCard :title="factory.name || 'FACTORY.UNIT'" class="factory-card-wrapper">
+    <template #header>
+      <div class="brutalist-header">
+        <h3 class="card-title">{{ factory.name || 'FACTORY' }}</h3>
+        <div class="status-indicator" :class="{ running: factory.isActive }">
+          {{ factory.isActive ? 'RUN' : 'STOP' }}
         </div>
       </div>
-      
-      <el-tag
-        :type="factory.isActive ? 'success' : 'info'"
-        effect="dark"
-        size="small"
-        class="status-tag"
-      >
-        {{ factory.isActive ? 'RUNNING' : 'STOPPED' }}
-      </el-tag>
-    </div>
+    </template>
 
-    <div class="card-body">
-      <div class="item-list" v-if="visibleItems.length">
-        <div class="ae2-slot-row" v-for="item in visibleItems" :key="item.itemId">
-          <ItemIcon :item-id="item.itemId" />
-          <div class="item-meta">
-            <div class="item-id" :title="item.itemId">{{ getItemName(item.itemId) }}</div>
-            <div class="item-stats">
-              {{ formatNumber(item.prodRate) }}/h · {{ formatCompact(item.count) }}
+    <div class="factory-details">
+      <div class="id-row">ID: {{ factory.id }}</div>
+      
+      <div class="item-list-container" v-if="visibleItems.length">
+        <div class="b-item-row" v-for="item in visibleItems" :key="item.itemId">
+          <ItemIcon :item-id="item.itemId" class="b-icon" />
+          <div class="b-meta">
+            <div class="b-name">{{ getItemName(item.itemId) }}</div>
+            <div class="b-stats">
+              <span class="rate">{{ formatNumber(item.prodRate) }}/h</span>
+              <span class="count">{{ formatCompact(item.count) }}</span>
             </div>
           </div>
         </div>
       </div>
+      <div v-else class="empty-state">NO OUTPUT</div>
     </div>
 
-    <div class="ae2-footer-bar">
-      <span class="control-label">远程控制</span>
-      <el-switch
-        v-model="localActive"
-        inline-prompt
-        active-text="ON"
-        inactive-text="OFF"
-        @change="handleSwitchChange"
-        @click.stop
-        :loading="loading"
-      />
+    <div class="factory-controls">
+      <div class="control-row" @click.stop>
+        <span class="lbl">POWER</span>
+        <div class="b-switch" :class="{ active: localActive }" @click="toggleSwitch">
+          <div class="track"></div>
+          <div class="knob"></div>
+        </div>
+      </div>
+      <div class="control-row settings-btn" @click.stop="openSettings">
+        <span class="lbl">CONFIG</span>
+        <span class="icon">⚙</span>
+      </div>
     </div>
-  </el-card>
+  </BrutalistCard>
 
   <el-dialog
     v-model="dialogVisible"
-    title="工厂显示配置"
+    title="CONFIGURATION"
     width="520px"
+    class="brutalist-dialog"
     :append-to-body="true"
   >
-    <div class="name-panel">
-      <div class="settings-title">工厂名称</div>
+    <div class="b-form-group">
+      <label>UNIT NAME</label>
       <el-input
         v-model="localName"
-        placeholder="输入自定义名称"
+        placeholder="ENTER NAME"
         @input="nameEditing = true"
         @change="commitName"
         @blur="commitName"
-        @click.stop
       />
     </div>
 
-    <div v-if="localItems.length" class="settings-panel">
-      <div class="settings-title">显示配置 + 拖动排序</div>
-      <div class="settings-group">
+    <div class="b-form-group">
+      <label>OUTPUTS</label>
+      <div v-if="localItems.length" class="b-list">
         <div
-          class="settings-row ae2-slot-row"
+          class="b-list-item"
           v-for="(item, index) in localItems"
           :key="item.itemId"
           draggable="true"
@@ -81,23 +72,24 @@
           @dragover.prevent="handleDragOver(index)"
           @drop="handleDrop"
         >
+          <div class="drag-handle">::</div>
           <el-checkbox v-model="item.visible" @change="commitSettings"></el-checkbox>
-          <span class="drag-handle">||</span>
-          <span class="settings-id" :title="item.itemId">{{ getItemName(item.itemId) }}</span>
+          <span class="item-name">{{ getItemName(item.itemId) }}</span>
         </div>
       </div>
+      <div v-else class="empty-text">NO DATA</div>
     </div>
-    <div v-else class="settings-empty">暂无产物数据</div>
   </el-dialog>
 </template>
 
 <script setup>
 import { ref, watch, computed } from 'vue'
-import ItemIcon from './ItemIcon.vue' // 确保你目录下有这个组件
+import BrutalistCard from './BrutalistCard.vue'
+import ItemIcon from './ItemIcon.vue'
 import { useItemNames } from '../composables/useItemNames'
 
 const props = defineProps(['factory'])
-const emit = defineEmits(['command']) // 改名为 command 更语义化
+const emit = defineEmits(['command'])
 
 const loading = ref(false)
 const localActive = ref(props.factory.isActive)
@@ -106,13 +98,11 @@ const dialogVisible = ref(false)
 const dragIndex = ref(null)
 const localName = ref(props.factory?.name || '')
 const nameEditing = ref(false)
-const { names: itemNames, ensureName } = useItemNames()
+const { names: itemNames } = useItemNames()
 
-// 监听后端状态变化，同步给开关
-// 防止网页手动开关后，后端还没更新，导致开关状态不一致
 watch(() => props.factory.isActive, (newVal) => {
   localActive.value = newVal
-  loading.value = false // 收到后端更新，说明操作完成
+  loading.value = false
 })
 
 watch(() => props.factory, (factory) => {
@@ -123,21 +113,20 @@ watch(() => props.factory, (factory) => {
   }
 }, { deep: true, immediate: true })
 
-// 处理开关点击
+function toggleSwitch() {
+  if (loading.value) return
+  const newVal = !localActive.value
+  localActive.value = newVal
+  handleSwitchChange(newVal)
+}
+
 function handleSwitchChange(val) {
-  loading.value = true // 开启加载状态，防止连点
-  
-  // val 为 true (开启) -> 发送 "start"
-  // val 为 false (关闭) -> 发送 "stop"
+  loading.value = true
   const action = val ? 'start' : 'stop'
-  
-  // 向上触发事件，由父组件通过 WebSocket 发送
   emit('command', { 
     target: props.factory.id, 
     action: action 
   })
-  
-  // 这里的 loading 不会立刻结束，而是等 watch 到 props 变化或者超时后结束
   setTimeout(() => { loading.value = false }, 2000)
 }
 
@@ -180,8 +169,7 @@ const itemsList = computed(() => normalizeItems(props.factory?.items))
 const sortedItems = computed(() => sortItems(itemsList.value))
 
 const visibleItems = computed(() => {
-  const visibleItemList = sortedItems.value.filter((factoryItem) => factoryItem.visible)
-  return visibleItemList
+  return sortedItems.value.filter((factoryItem) => factoryItem.visible)
 })
 
 function normalizeItems(rawItems) {
@@ -224,196 +212,200 @@ function commitSettings() {
   })
 }
 
-// 数字格式化: 1,234
 function formatNumber(num) {
   if (!num) return '0'
   return Math.floor(num).toLocaleString()
 }
 
-// 大数字缩略: 1.5k, 2.3M
 function formatCompact(num) {
   if (!num) return '0'
-  // 如果数字小于 10000，直接显示完整数字
   if (num < 10000) return num.toLocaleString()
-  
   return Intl.NumberFormat('en-US', {
     notation: "compact",
     maximumFractionDigits: 1
   }).format(num)
 }
-
 </script>
 
-<style scoped>
-/* 字体引入 (推荐在 index.html 引入 Google Fonts) */
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap');
+<style scoped lang="scss">
+.brutalist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #fff;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  
+  .card-title {
+    margin: 0;
+    font-size: 1rem;
+    background: var(--primary-color);
+    color: #000;
+    padding: 2px 5px;
+  }
+}
 
-.factory-card {
-  background: #1d1e1f;
-  border: 1px solid #363637;
+.status-indicator {
+  font-weight: bold;
+  font-size: 0.8rem;
+  padding: 2px 6px;
+  background: #333;
   color: #fff;
-  transition: all 0.3s ease;
-  margin-bottom: 20px;
-  border-radius: 8px;
+  border: 1px solid #fff;
+  
+  &.running {
+    background: var(--accent-color);
+    color: #000;
+  }
 }
 
-.factory-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
-  border-color: #606266;
+.factory-details {
+  .id-row {
+    font-size: 0.7rem;
+    color: #888;
+    margin-bottom: 10px;
+    font-family: monospace;
+  }
 }
 
-/* 激活状态左边框 */
-.factory-card.is-active {
-  border-left: 5px solid #67c23a;
-}
-
-/* --- Header --- */
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.title-group {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.title-text {
+.item-list-container {
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  margin-bottom: 15px;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
-.factory-name {
-  font-weight: bold;
-  font-size: 1.2em;
-  color: #E5EAF3;
-}
-
-.factory-id {
-  font-size: 0.8em;
-  color: #909399;
-  font-family: monospace;
-}
-
-/* --- Body --- */
-.card-body {
-  padding: 0 2px 4px;
-}
-
-.item-list {
-  margin-top: 6px;
-  display: grid;
-  gap: 6px;
-}
-
-.item-row {
+.b-item-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 6px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.item-row :deep(.item-icon-wrapper) {
-  width: 28px;
-  height: 28px;
-  padding: 3px;
-}
-
-.item-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.item-id {
-  font-size: 0.8em;
-  color: #cdd0d6;
-}
-
-.item-stats {
-  font-size: 0.75em;
-  color: #909399;
-}
-
-.settings-panel {
-  display: grid;
-  gap: 12px;
-}
-
-.name-panel {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.settings-title {
-  font-size: 0.9em;
-  color: #909399;
-}
-
-.settings-group {
-  display: grid;
   gap: 10px;
+  background: #000;
+  border: 1px solid #333;
+  padding: 5px;
+  
+  &:hover {
+    border-color: var(--primary-color);
+  }
 }
 
-.settings-row {
-  display: grid;
-  grid-template-columns: auto 28px 1fr;
-  gap: 8px;
-  align-items: center;
-  cursor: grab;
+.b-meta {
+  flex: 1;
+  overflow: hidden;
+  
+  .b-name {
+    font-size: 0.9rem;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .b-stats {
+    font-size: 0.75rem;
+    color: #888;
+    display: flex;
+    justify-content: space-between;
+  }
 }
 
-.settings-row:active {
-  cursor: grabbing;
-}
-
-.drag-handle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
-  border: 1px dashed rgba(255, 255, 255, 0.2);
-  color: #909399;
-  font-family: monospace;
-  font-size: 0.75em;
-  user-select: none;
-}
-
-.settings-id {
-  font-size: 0.82em;
-  color: #c0c4cc;
-  word-break: break-all;
-}
-
-.settings-empty {
-  color: #909399;
-  font-size: 0.9em;
-}
-
-/* --- Colors --- */
-/* --- Footer --- */
-.card-footer {
-  margin-top: 20px;
-  padding-top: 15px;
-  border-top: 1px solid #303133;
+.factory-controls {
+  border-top: 2px solid #fff;
+  padding-top: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.control-label {
-  font-size: 0.85em;
-  font-weight: bold;
-  color: #909399;
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  
+  .lbl {
+    font-size: 0.8rem;
+    font-weight: bold;
+  }
+  
+  &.settings-btn:hover {
+    color: var(--primary-color);
+  }
+}
+
+.b-switch {
+  width: 40px;
+  height: 20px;
+  background: #333;
+  border: 2px solid #fff;
+  position: relative;
+  cursor: pointer;
+  
+  .knob {
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: all 0.2s;
+  }
+  
+  &.active {
+    background: var(--accent-color);
+    
+    .knob {
+      left: 20px;
+      background: #000;
+    }
+  }
+}
+
+.empty-state, .empty-text {
+  color: #666;
+  font-style: italic;
+  text-align: center;
+  padding: 10px;
+}
+
+/* Dialog Styles */
+.b-form-group {
+  margin-bottom: 15px;
+  
+  label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: var(--primary-color);
+  }
+}
+
+.b-list {
+  border: 2px solid #333;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.b-list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-bottom: 1px solid #333;
+  background: #000;
+  
+  &:last-child { border-bottom: none; }
+  
+  .drag-handle {
+    cursor: grab;
+    color: #666;
+    font-weight: bold;
+  }
+  
+  .item-name {
+    font-size: 0.9rem;
+  }
 }
 </style>
