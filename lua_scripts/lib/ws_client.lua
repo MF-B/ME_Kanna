@@ -1,11 +1,13 @@
-local util = require("util")
-
 local M = {}
 
 function M.run(wsUrl, onSession, reconnectDelay)
+    local firstRun = true
     while true do
-        term.clear()
-        term.setCursorPos(1, 1)
+        if firstRun then
+            term.clear()
+            term.setCursorPos(1, 1)
+            firstRun = false
+        end
         print("Connecting...")
 
         local ws, err = http.websocket(wsUrl)
@@ -20,7 +22,7 @@ function M.run(wsUrl, onSession, reconnectDelay)
         end
 
         print("Reconnecting in " .. tostring(reconnectDelay) .. "s...")
-        util.sleepSeconds(reconnectDelay)
+        sleep(reconnectDelay)
     end
 end
 

@@ -55,6 +55,26 @@ function M.getCraftables(bridge, filter)
     return bridge.getCraftableItems(filter or {}) or {}
 end
 
+function M.getCraftablesNormalized(bridge, filter)
+    local raw = M.getCraftables(bridge, filter)
+    local result = {}
+    if type(raw) ~= "table" then return result end
+
+    for _, entry in ipairs(raw) do
+        local itemId = entry and entry.name
+        if type(itemId) == "string" and itemId ~= "" then
+            table.insert(result, {
+                itemId = itemId,
+                itemName = entry.displayName or itemId,
+                fingerprint = entry.fingerprint,
+                count = entry.count or 0
+            })
+        end
+    end
+
+    return result
+end
+
 function M.craft(bridge, itemId, count)
     if not bridge or not bridge.craftItem then return nil, "no craftItem api" end
     if type(itemId) ~= "string" or itemId == "" then return nil, "invalid itemId" end
@@ -72,14 +92,7 @@ function M.craft(bridge, itemId, count)
         return task, nil
     end
 
-    -- 兼容部分实现使用 amount 字段
-    local fallbackFilter = {name = itemId, amount = craftCount}
-    local fallbackTask, fallbackErr = bridge.craftItem(fallbackFilter)
-    if fallbackTask then
-        return fallbackTask, nil
-    end
-
-    return nil, fallbackErr or err or "craft failed"
+    return nil, err or "craft failed"
 end
 
 return M

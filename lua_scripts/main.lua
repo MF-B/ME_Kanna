@@ -9,63 +9,46 @@ local util = require("util")
 
 local ae_device = nil
 
-local function normalizeCraftables(rawCraftables, bridge)
-    local normalizedCraftables = {}
-    if type(rawCraftables) ~= "table" then return normalizedCraftables end
-
-    for _, craftableEntry in ipairs(rawCraftables) do
-        local itemId = craftableEntry and craftableEntry.name
-        if type(itemId) == "string" and itemId ~= "" then
-            -- Query current stock from ME system
-            local count = 0
-            if bridge then
-                local detail = bridge.getItem({name = itemId})
-                count = (detail and detail.count) or 0
-            end
-            table.insert(normalizedCraftables, {
-                itemId = itemId,
-                itemName = craftableEntry.displayName or itemId,
-                count = count
-            })
-        end
-    end
-
-    return normalizedCraftables
-end
-
 local function sendLoop(ws)
     while true do
         ae_device = aeBridge.ensureBridge(ae_device)
 
         if ae_device then
-            -- 1. 采集数据 (全都在 aeBridge 里封装好了)
-            local filteredItems = aeBridge.collectFilteredItems(ae_device, whitelist.getList())
-            local energy = aeBridge.collectEnergy(ae_device)
-            local storage = aeBridge.collectStorage(ae_device)
-            
-            -- 2. 打包发送 (whitelist.getVersion() 放在这里)
-            local payload = packets.inventoryUpdate(
-                config.DEVICE_ID,
-                "Main Storage",
-                true,
-                filteredItems,
-                energy,
-                storage,
-                whitelist.getVersion()
-            )
-            util.sendJson(ws, payload)
+            local ok, err = pcall(function()
+                -- 1. 采集数据 (全都在 aeBridge 里封装好了)
+                local filteredItems = aeBridge.collectFilteredItems(ae_device, whitelist.getList())
+                local energy = aeBridge.collectEnergy(ae_device)
+                local storage = aeBridge.collectStorage(ae_device)
+                
+                -- 2. 打包发送 (whitelist.getVersion() 放在这里)
+                local payload = packets.inventoryUpdate(
+                    config.DEVICE_ID,
+                    "Main Storage",
+                    true,
+                    filteredItems,
+                    energy,
+                    storage,
+                    whitelist.getVersion()
+                )
+                util.sendJson(ws, payload)
+            end)
+
+            if not ok then
+                print("Send error: " .. tostring(err))
+                ae_device = nil -- bridge 可能已断开，下次重新扫描
+            end
             
             -- 3. 检查同步 (放在发送之后，避免 HTTP 卡顿影响数据上报)
             whitelist.sync(config.API_URL, config.SYNC_INTERVAL)
         end
 
-        util.sleepSeconds(0.5)
+        sleep(0.5)
     end
 end
 
 local function receiveLoop(ws)
     while true do
-        local msg = ws.receive() 
+        local msg = ws.receive(30) -- 30秒超时，防止半开连接永久阻塞
         if msg then
             local packet = textutils.unserializeJSON(msg)
             if whitelist.handlePacket(packet) then
@@ -73,7 +56,7 @@ local function receiveLoop(ws)
             elseif packet and packet.type == "cmd_craftables" then
                 ae_device = aeBridge.ensureBridge(ae_device)
                 if ae_device then
-                    local craftableList = normalizeCraftables(aeBridge.getCraftables(ae_device), ae_device)
+                    local craftableList = aeBridge.getCraftablesNormalized(ae_device)
                     util.sendJson(ws, packets.craftablesUpdate(config.DEVICE_ID, craftableList, packet.requestId))
                     print("Craftables sent: " .. tostring(#craftableList))
                 else
@@ -88,7 +71,7 @@ local function receiveLoop(ws)
                         local task, err = aeBridge.craft(ae_device, itemId, count)
                         local ok = task ~= nil
                         if ok then
-                            local craftId = task.id or task.taskId or "?"
+                            local craftId = task.id or "?"
                             print("Craft queued: " .. tostring(itemId) .. " x" .. tostring(count) .. " (id=" .. tostring(craftId) .. ")")
                         else
                             print("Craft failed: " .. tostring(itemId) .. " x" .. tostring(count) .. " reason=" .. tostring(err))
@@ -101,8 +84,15 @@ local function receiveLoop(ws)
                 end
             end
         else
-            print("WS Disconnected")
-            break
+            -- receive 返回 nil: 超时或断开
+            -- 发送心跳探测连接是否存活
+            local pingOk = pcall(function()
+                util.sendJson(ws, {type = "ping"})
+            end)
+            if not pingOk then
+                print("WS Disconnected")
+                break
+            end
         end
     end
 end
