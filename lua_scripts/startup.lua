@@ -9,6 +9,7 @@ local FILES = {
     "lib/whitelist.lua",
     "lib/ae_bridge.lua",
     "lib/packets.lua",
+    "lib/cmd_handler.lua",
     "lib/bootloader.lua"
 }
 -- ==================================================
