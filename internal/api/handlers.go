@@ -79,6 +79,8 @@ func HandleMinecraft(c *gin.Context) {
 			service.BroadcastCraftResult(msg)
 		case "craft_status":
 			service.BroadcastCraftStatus(msg)
+		case "patterns":
+			service.ProcessPatternsUpdate(msg.ID, msg.Patterns)
 		}
 	}
 
@@ -234,6 +236,10 @@ func HandleAutoCraftRecipe(c *gin.Context) {
 		return
 	}
 
+	// 触发 Lua 刷新该物品的配方 (异步，不阻塞)
+	service.RequestPatternsRefresh("", fmt.Sprintf("%d", time.Now().UnixNano()),
+		map[string]interface{}{"output": map[string]interface{}{"name": itemID}})
+
 	recipe := service.BuildRecipeSnapshot(itemID)
 	if recipe == nil {
 		c.JSON(404, gin.H{"error": "recipe not found"})
@@ -241,6 +247,26 @@ func HandleAutoCraftRecipe(c *gin.Context) {
 	}
 
 	c.JSON(200, recipe)
+}
+
+func HandlePatterns(c *gin.Context) {
+	requestID := fmt.Sprintf("%d", time.Now().UnixNano())
+	itemID := c.Query("itemId")
+
+	var filter map[string]interface{}
+	if itemID != "" {
+		filter = map[string]interface{}{
+			"output": map[string]interface{}{"name": itemID},
+		}
+	}
+
+	requested := service.RequestPatternsRefresh("", requestID, filter)
+	patterns, lastUpdated := service.GetPatternsSnapshot()
+	c.JSON(200, gin.H{
+		"patterns":    patterns,
+		"requested":   requested,
+		"lastUpdated": lastUpdated,
+	})
 }
 
 func HandleAutoCraftTasks(c *gin.Context) {

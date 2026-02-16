@@ -35,6 +35,7 @@ func main() {
 	r.PUT("/config/whitelist", api.HandleConfigUpdate)
 	r.GET("/autocraft/craftables", api.HandleAutoCraftables)
 	r.GET("/autocraft/recipe", api.HandleAutoCraftRecipe)
+	r.GET("/autocraft/patterns", api.HandlePatterns)
 	r.GET("/autocraft/tasks", api.HandleAutoCraftTasks)
 	r.POST("/autocraft/tasks", api.HandleAutoCraftTasks)
 	r.DELETE("/autocraft/tasks/:itemId", api.HandleAutoCraftTaskDelete)

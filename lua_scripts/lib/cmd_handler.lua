@@ -59,13 +59,72 @@ local function handleCraft(packet, ctx)
     end
 end
 
+local function handleGetPatterns(packet, ctx)
+    local bridge = ctx.getBridge()
+    if not bridge then
+        print("Patterns request failed: no ME Bridge")
+        util.sendJson(ctx.ws, packets.patternsUpdate(config.DEVICE_ID, {}, packet.requestId))
+        return
+    end
+
+    -- 支持按物品过滤: packet.filter = {output = {name = "xxx"}}
+    local filter = packet.filter or {}
+    local rawPatterns = aeBridge.getPatterns(bridge, filter)
+
+    -- 精简数据：只保留前端需要的字段
+    local result = {}
+    for _, p in ipairs(rawPatterns) do
+        local inputs = {}
+        if type(p.inputs) == "table" then
+            for _, inp in ipairs(p.inputs) do
+                local primary = inp.primaryInput or inp
+                table.insert(inputs, {
+                    name = primary.name or "",
+                    displayName = primary.displayName or primary.name or "",
+                    count = (inp.multiplier or 1) * (primary.count or 1),
+                    fingerprint = primary.fingerprint,
+                })
+            end
+        end
+
+        local outputs = {}
+        if type(p.outputs) == "table" then
+            for _, out in ipairs(p.outputs) do
+                table.insert(outputs, {
+                    name = out.name or "",
+                    displayName = out.displayName or out.name or "",
+                    count = out.count or 1,
+                    fingerprint = out.fingerprint,
+                })
+            end
+        end
+
+        local primary = p.primaryOutput or {}
+        table.insert(result, {
+            patternType = p.patternType or "crafting",
+            primaryOutput = {
+                name = primary.name or "",
+                displayName = primary.displayName or primary.name or "",
+                count = primary.count or 1,
+                fingerprint = primary.fingerprint,
+            },
+            inputs = inputs,
+            outputs = outputs,
+        })
+    end
+
+    util.sendJson(ctx.ws, packets.patternsUpdate(config.DEVICE_ID, result, packet.requestId))
+    print("Patterns sent: " .. tostring(#result))
+end
+
 -- ========== 命令分发表 ==========
 -- key = packet.type, value = handler(packet, ctx)
 -- config_sync 比较特殊：它没有固定的 type 字段，由 whitelist.handlePacket 判断
 
 local handlers = {
-    cmd_craftables = handleCmdCraftables,
-    craft          = handleCraft,
+    cmd_craftables   = handleCmdCraftables,
+    craft            = handleCraft,
+    cmd_get_patterns = handleGetPatterns,
 }
 
 -- ========== 公共接口 ==========

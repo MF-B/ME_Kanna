@@ -132,19 +132,7 @@ func RequestCraftablesRefresh(targetID, requestID string) bool {
 }
 
 func BuildRecipeSnapshot(itemID string) *model.RecipeSnapshot {
-	itemID = strings.TrimSpace(itemID)
-	if itemID == "" {
-		return nil
-	}
-	name, err := GetItemDisplayName(itemID)
-	if err != nil || strings.TrimSpace(name) == "" {
-		name = itemID
-	}
-	return &model.RecipeSnapshot{
-		ItemID:   itemID,
-		ItemName: name,
-		Count:    1,
-	}
+	return BuildRecipeTree(itemID, 0)
 }
 
 func ListAutoCraftTasks() []*model.AutoCraftTask {

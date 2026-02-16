@@ -109,6 +109,7 @@ type IncomingMessage struct {
 	ItemID           string          `json:"itemId"`
 	Count            int64           `json:"count"`
 	Craftables       []CraftableItem `json:"craftables"`
+	Patterns         json.RawMessage `json:"patterns"`
 	WhitelistVersion json.RawMessage `json:"whitelist_version"`
 	// craft_result 字段
 	Success bool   `json:"success"`

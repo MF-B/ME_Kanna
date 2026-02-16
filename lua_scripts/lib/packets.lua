@@ -56,6 +56,18 @@ function M.craftResult(deviceId, itemId, count, success, taskId, errMsg)
     }
 end
 
+function M.patternsUpdate(deviceId, patterns, requestId)
+    local payload = {
+        type = "patterns",
+        id = deviceId,
+        patterns = patterns or {}
+    }
+    if requestId and requestId ~= "" then
+        payload.requestId = requestId
+    end
+    return payload
+end
+
 function M.craftStatus(deviceId, taskId, isError, message)
     return {
         type = "craft_status",
