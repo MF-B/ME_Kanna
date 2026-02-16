@@ -48,19 +48,8 @@ func EnsureWhitelistFromFactories() ([]string, string, bool, error) {
 	}
 
 	s := store.Global
-	seen := make(map[string]bool)
-	collected := make([]string, 0)
-
 	s.Mutex.RLock()
-	for _, factory := range s.Factories {
-		for itemID := range factory.Items {
-			if itemID == "" || seen[itemID] {
-				continue
-			}
-			seen[itemID] = true
-			collected = append(collected, itemID)
-		}
-	}
+	collected := collectAllFactoryItemIDs(s)
 	s.Mutex.RUnlock()
 
 	if len(collected) == 0 {

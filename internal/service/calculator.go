@@ -100,7 +100,26 @@ func ensureFactoryItem(factory *model.FactoryData, itemID string) (*model.Factor
 	return item, false
 }
 
+// collectAllFactoryItemIDs 收集所有工厂中的物品 ID（去重）
+// Fix #6: 避免重复的收集逻辑散落在多处
+// 调用者必须持有 s.Mutex 锁
+func collectAllFactoryItemIDs(s *store.StateManager) []string {
+	seen := make(map[string]bool)
+	collected := make([]string, 0)
+	for _, factory := range s.Factories {
+		for itemID := range factory.Items {
+			if itemID == "" || seen[itemID] {
+				continue
+			}
+			seen[itemID] = true
+			collected = append(collected, itemID)
+		}
+	}
+	return collected
+}
+
 // ProcessFlowUpdate 处理海龟产能 (仅计算速率)
+// Fix #9: 统一使用 defer Unlock
 func ProcessFlowUpdate(msg model.IncomingMessage) {
 	s := store.Global
 	s.Mutex.Lock()
@@ -113,21 +132,11 @@ func ProcessFlowUpdate(msg model.IncomingMessage) {
 
 	factory := ensureFactory(s, id, msg.Name)
 	factory.IsActive = true
-	item, created := ensureFactoryItem(factory, msg.ItemID)
+	_, created := ensureFactoryItem(factory, msg.ItemID)
 
 	var collected []string
 	if created {
-		seen := make(map[string]bool)
-		collected = make([]string, 0)
-		for _, existing := range s.Factories {
-			for itemID := range existing.Items {
-				if itemID == "" || seen[itemID] {
-					continue
-				}
-				seen[itemID] = true
-				collected = append(collected, itemID)
-			}
-		}
+		collected = collectAllFactoryItemIDs(s)
 	}
 
 	// 1. 写入当前分钟桶
@@ -157,6 +166,7 @@ func ProcessFlowUpdate(msg model.IncomingMessage) {
 			totalAmount += b.Amount
 		}
 	}
+	item, _ := ensureFactoryItem(factory, msg.ItemID)
 	item.ProdRate = (totalAmount / float64(RateBucketCount)) * 60.0
 	if factory.PrimaryItem == "" {
 		factory.PrimaryItem = msg.ItemID
@@ -166,8 +176,10 @@ func ProcessFlowUpdate(msg model.IncomingMessage) {
 	}
 	factory.LastUpdated = now.Unix()
 
-	BroadcastToWeb()
+	// Fix #1: 先拷贝 payload，解锁后再发送
 	s.Mutex.Unlock()
+
+	BroadcastToWeb()
 
 	if len(collected) > 0 {
 		_, _, _ = EnsureWhitelistItems(collected)
@@ -180,7 +192,6 @@ func ProcessInventoryUpdate(deviceID string, report model.LuaReport) {
 
 	s := store.Global
 	s.Mutex.Lock()
-	defer s.Mutex.Unlock()
 
 	now := time.Now()
 	networkID := resolveNetworkID(deviceID)
@@ -189,6 +200,8 @@ func ProcessInventoryUpdate(deviceID string, report model.LuaReport) {
 	updateSystemEnergy(now, report, systemStats)
 	updateSystemStorage(now, report, systemStats)
 	updateFactories(now, report, s, systemStats)
+
+	s.Mutex.Unlock()
 
 	BroadcastToWeb()
 }
@@ -256,23 +269,32 @@ func updateFactories(now time.Time, report model.LuaReport, s *store.StateManage
 	}
 }
 
+// BroadcastToWeb 构建 payload 并广播到所有 Web 客户端
+// Fix #1: 在锁内拷贝数据，解锁后再发送，避免 WriteJSON 阻塞持锁
 func BroadcastToWeb() {
 	s := store.Global
-	list := make([]*model.FactoryData, 0)
+
+	// 锁内：拷贝数据
+	s.Mutex.RLock()
+	list := make([]*model.FactoryData, 0, len(s.Factories))
 	for _, v := range s.Factories {
 		list = append(list, v)
 	}
-
 	systemStats := selectBroadcastSystemStats(s)
+	clients := make([]*store.SafeConn, 0, len(s.WebClients))
+	for client := range s.WebClients {
+		clients = append(clients, client)
+	}
+	s.Mutex.RUnlock()
 
+	// 锁外：构建 payload 并发送
 	payload := gin.H{
 		"type":   "update",
 		"data":   list,
 		"system": toLegacySystemPayload(systemStats),
 	}
 
-	for client := range s.WebClients {
-		// 忽略错误，简单处理
+	for _, client := range clients {
 		_ = client.WriteJSON(payload)
 	}
 }
@@ -289,7 +311,15 @@ func BroadcastCraftResult(msg model.IncomingMessage) {
 	}
 	log.Printf("[CraftResult] item=%s count=%d success=%v taskId=%s err=%s",
 		msg.ItemID, msg.Count, msg.Success, msg.TaskID, msg.Error)
+
+	s.Mutex.RLock()
+	clients := make([]*store.SafeConn, 0, len(s.WebClients))
 	for client := range s.WebClients {
+		clients = append(clients, client)
+	}
+	s.Mutex.RUnlock()
+
+	for _, client := range clients {
 		_ = client.WriteJSON(payload)
 	}
 }
@@ -304,7 +334,15 @@ func BroadcastCraftStatus(msg model.IncomingMessage) {
 	}
 	log.Printf("[CraftStatus] taskId=%s error=%v msg=%s",
 		msg.TaskID, msg.Error, msg.Message)
+
+	s.Mutex.RLock()
+	clients := make([]*store.SafeConn, 0, len(s.WebClients))
 	for client := range s.WebClients {
+		clients = append(clients, client)
+	}
+	s.Mutex.RUnlock()
+
+	for _, client := range clients {
 		_ = client.WriteJSON(payload)
 	}
 }
@@ -358,6 +396,7 @@ func selectBroadcastSystemStats(s *store.StateManager) *model.SystemStats {
 	return &model.SystemStats{EnergyStats: model.EnergyStats{EnergyMax: 1}, Inventory: map[string]int64{}}
 }
 
+// TODO Fix #8: 前端迁移到 system.energyStats.xxx 后删除冗余的扁平字段
 func toLegacySystemPayload(stats *model.SystemStats) gin.H {
 	if stats == nil {
 		stats = &model.SystemStats{EnergyStats: model.EnergyStats{EnergyMax: 1}, Inventory: map[string]int64{}}
@@ -383,7 +422,6 @@ func toLegacySystemPayload(stats *model.SystemStats) gin.H {
 func ResetFactoryStats(id string) {
 	s := store.Global
 	s.Mutex.Lock()
-	defer s.Mutex.Unlock()
 
 	// 1. 清除环形桶数据 (防止下次开机时计算错误)
 	delete(factoryBuckets, id)
@@ -397,7 +435,8 @@ func ResetFactoryStats(id string) {
 		factory.LastUpdated = time.Now().Unix()
 	}
 
-	// 3. 立即广播新状态
+	// Fix #1: 解锁后再广播
+	s.Mutex.Unlock()
 	BroadcastToWeb()
 }
 
@@ -433,20 +472,11 @@ func UpdateFactoryItemSettings(id string, primaryItem string, settings []model.F
 		}
 	}
 
-	seen := make(map[string]bool)
-	collected := make([]string, 0)
-	for _, factory := range s.Factories {
-		for itemID := range factory.Items {
-			if itemID == "" || seen[itemID] {
-				continue
-			}
-			seen[itemID] = true
-			collected = append(collected, itemID)
-		}
-	}
+	collected := collectAllFactoryItemIDs(s)
 
-	BroadcastToWeb()
+	// Fix #1: 解锁后再广播
 	s.Mutex.Unlock()
+	BroadcastToWeb()
 
 	if len(collected) > 0 {
 		_, _, _ = EnsureWhitelistItems(collected)
@@ -456,19 +486,22 @@ func UpdateFactoryItemSettings(id string, primaryItem string, settings []model.F
 func UpdateFactoryName(id string, name string) {
 	s := store.Global
 	s.Mutex.Lock()
-	defer s.Mutex.Unlock()
 
 	factory, exists := s.Factories[id]
 	if !exists {
+		s.Mutex.Unlock()
 		return
 	}
 	name = strings.TrimSpace(name)
 	if name == "" {
+		s.Mutex.Unlock()
 		return
 	}
 
 	factory.Name = name
 	factory.NameLocked = true
 
+	// Fix #1: 解锁后再广播
+	s.Mutex.Unlock()
 	BroadcastToWeb()
 }

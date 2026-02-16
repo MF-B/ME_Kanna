@@ -2,7 +2,6 @@ package service
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"mineCCT/internal/model"
 	"mineCCT/internal/store"
@@ -33,7 +32,6 @@ var patternState = struct {
 	mu          sync.RWMutex
 	patterns    []Pattern
 	lastUpdated time.Time
-	deviceID    string
 }{}
 
 func ProcessPatternsUpdate(deviceID string, rawPatterns json.RawMessage) {
@@ -46,10 +44,12 @@ func ProcessPatternsUpdate(deviceID string, rawPatterns json.RawMessage) {
 	patternState.mu.Lock()
 	patternState.patterns = patterns
 	patternState.lastUpdated = time.Now()
-	if strings.TrimSpace(deviceID) != "" {
-		patternState.deviceID = deviceID
-	}
 	patternState.mu.Unlock()
+
+	// Fix #10: 统一通过 SetMainDeviceID 设置
+	if strings.TrimSpace(deviceID) != "" {
+		SetMainDeviceID(strings.TrimSpace(deviceID))
+	}
 
 	log.Printf("[Patterns] cached %d patterns from device %s", len(patterns), deviceID)
 }
@@ -82,9 +82,7 @@ func RequestPatternsRefresh(targetID, requestID string, filter map[string]interf
 		cmd["filter"] = filter
 	}
 
-	_ = targetConn.SetWriteDeadline(time.Now().Add(5 * time.Second))
 	err := targetConn.WriteJSON(cmd)
-	_ = targetConn.SetWriteDeadline(time.Time{})
 	return err == nil
 }
 
@@ -144,22 +142,4 @@ func BuildRecipeTree(itemID string, depth int) *model.RecipeSnapshot {
 	}
 
 	return node
-}
-
-// HandlePatternsRequest 处理来自前端的配方请求：先刷新再返回
-func HandlePatternsRequest(itemID string) ([]Pattern, bool) {
-	requestID := fmt.Sprintf("%d", time.Now().UnixNano())
-
-	var filter map[string]interface{}
-	if itemID != "" {
-		filter = map[string]interface{}{
-			"output": map[string]interface{}{
-				"name": itemID,
-			},
-		}
-	}
-
-	requested := RequestPatternsRefresh("", requestID, filter)
-	patterns, _ := GetPatternsSnapshot()
-	return patterns, requested
 }

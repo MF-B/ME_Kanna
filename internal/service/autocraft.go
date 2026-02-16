@@ -9,8 +9,6 @@ import (
 
 	"mineCCT/internal/model"
 	"mineCCT/internal/store"
-
-	"github.com/gorilla/websocket"
 )
 
 var autoCraftState = struct {
@@ -51,12 +49,14 @@ func ProcessCraftablesUpdate(deviceID string, list []model.CraftableItem) {
 	autoCraftState.mu.Lock()
 	autoCraftState.craftables = next
 	autoCraftState.lastUpdated = time.Now().Unix()
-	if strings.TrimSpace(deviceID) != "" {
-		autoCraftState.deviceID = strings.TrimSpace(deviceID)
-	}
 	autoCraftState.mu.Unlock()
 
-	// Broadcast to Web Clients
+	// Fix #10: 统一通过 SetMainDeviceID 设置
+	if strings.TrimSpace(deviceID) != "" {
+		SetMainDeviceID(strings.TrimSpace(deviceID))
+	}
+
+	// Fix #1: 在锁内拷贝客户端列表，解锁后再发送
 	go func() {
 		items, _ := GetCraftablesSnapshot()
 		payload := model.IncomingMessage{
@@ -66,9 +66,13 @@ func ProcessCraftablesUpdate(deviceID string, list []model.CraftableItem) {
 
 		s := store.Global
 		s.Mutex.RLock()
-		defer s.Mutex.RUnlock()
-
+		clients := make([]*store.SafeConn, 0, len(s.WebClients))
 		for client := range s.WebClients {
+			clients = append(clients, client)
+		}
+		s.Mutex.RUnlock()
+
+		for _, client := range clients {
 			_ = client.WriteJSON(payload)
 		}
 	}()
@@ -112,23 +116,16 @@ func RequestCraftablesRefresh(targetID, requestID string) bool {
 	}
 
 	s := store.Global
-	var targetConn *websocket.Conn
 	s.Mutex.RLock()
-	targetConn = s.DeviceConns[selectedTarget]
+	targetConn := s.DeviceConns[selectedTarget]
 	s.Mutex.RUnlock()
 
 	if targetConn == nil {
 		return false
 	}
 
-	_ = targetConn.SetWriteDeadline(time.Now().Add(2 * time.Second))
 	err := targetConn.WriteJSON(model.Command{Type: "cmd_craftables", RequestID: requestID})
-	_ = targetConn.SetWriteDeadline(time.Time{})
-	if err != nil {
-		return false
-	}
-
-	return true
+	return err == nil
 }
 
 func BuildRecipeSnapshot(itemID string) *model.RecipeSnapshot {
@@ -214,13 +211,14 @@ func EvaluateAutoCraftTasks(deviceID string, inventory map[string]int64) {
 		return
 	}
 
+	// Fix #10: 统一通过 SetMainDeviceID 设置
+	if strings.TrimSpace(deviceID) != "" {
+		SetMainDeviceID(strings.TrimSpace(deviceID))
+	}
+
 	now := time.Now().Unix()
 
 	autoCraftState.mu.Lock()
-	if strings.TrimSpace(deviceID) != "" {
-		autoCraftState.deviceID = strings.TrimSpace(deviceID)
-	}
-
 	commands := make([]model.Command, 0)
 	for _, task := range autoCraftState.tasks {
 		if task == nil || !task.IsActive {
@@ -294,17 +292,24 @@ func normalizeAutoCraftTask(task model.AutoCraftTask) (*model.AutoCraftTask, err
 func dispatchCraftCommand(targetDeviceID string, command model.Command) error {
 	s := store.Global
 	s.Mutex.RLock()
-	defer s.Mutex.RUnlock()
 
+	var targetConn *store.SafeConn
 	if targetDeviceID != "" {
 		if conn, ok := s.DeviceConns[targetDeviceID]; ok {
-			return conn.WriteJSON(command)
+			targetConn = conn
 		}
 	}
+	if targetConn == nil {
+		for _, conn := range s.DeviceConns {
+			targetConn = conn
+			break
+		}
+	}
+	s.Mutex.RUnlock()
 
-	for _, conn := range s.DeviceConns {
-		return conn.WriteJSON(command)
+	if targetConn == nil {
+		return errors.New("no device connection")
 	}
 
-	return errors.New("no device connection")
+	return targetConn.WriteJSON(command)
 }

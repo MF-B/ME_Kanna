@@ -34,12 +34,13 @@ func parseWhitelistVersion(raw json.RawMessage) string {
 }
 
 func HandleMinecraft(c *gin.Context) {
-	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	rawWs, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		return
 	}
-	defer ws.Close()
+	defer rawWs.Close()
 
+	ws := store.WrapConn(rawWs)
 	var currentDeviceID string
 
 	log.Println("[MC] New Device Connecting...")
@@ -48,7 +49,7 @@ func HandleMinecraft(c *gin.Context) {
 
 	for {
 		var msg model.IncomingMessage
-		if err := ws.ReadJSON(&msg); err != nil {
+		if err := rawWs.ReadJSON(&msg); err != nil {
 			break
 		}
 
@@ -90,12 +91,13 @@ func HandleMinecraft(c *gin.Context) {
 }
 
 func HandleWeb(c *gin.Context) {
-	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	rawWs, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		return
 	}
-	defer ws.Close()
+	defer rawWs.Close()
 
+	ws := store.WrapConn(rawWs)
 	s := store.Global
 
 	// 注册 Web 客户端
@@ -107,7 +109,7 @@ func HandleWeb(c *gin.Context) {
 
 	for {
 		var cmd model.Command
-		if err := ws.ReadJSON(&cmd); err != nil {
+		if err := rawWs.ReadJSON(&cmd); err != nil {
 			s.Mutex.Lock()
 			delete(s.WebClients, ws)
 			s.Mutex.Unlock()
@@ -142,14 +144,15 @@ func HandleWeb(c *gin.Context) {
 		// 2. 转发指令给海龟 (需要加锁读取 DeviceConns)
 		// ==========================================
 		if cmd.Action == "start" || cmd.Action == "stop" {
-			s.Mutex.Lock()
-			if targetConn, ok := s.DeviceConns[cmd.Target]; ok {
-				targetConn.WriteJSON(cmd)
+			s.Mutex.RLock()
+			targetConn, ok := s.DeviceConns[cmd.Target]
+			s.Mutex.RUnlock()
+			if ok {
+				_ = targetConn.WriteJSON(cmd)
 				log.Printf("Command forwarded to [%s]: %s", cmd.Target, cmd.Action)
 			} else {
 				log.Printf("Target [%s] offline, command dropped.", cmd.Target)
 			}
-			s.Mutex.Unlock()
 		}
 	}
 }
@@ -203,7 +206,7 @@ func HandleConfigUpdate(c *gin.Context) {
 	updated, _ := service.GetWhitelistSnapshot()
 	payload := gin.H{"type": "config_sync", "data": updated, "version": version}
 
-	connections := make([]*websocket.Conn, 0)
+	connections := make([]*store.SafeConn, 0)
 	s := store.Global
 	s.Mutex.RLock()
 	for _, conn := range s.DeviceConns {
