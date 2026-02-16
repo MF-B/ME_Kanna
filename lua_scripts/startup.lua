@@ -1,5 +1,5 @@
 -- ================= 配置 =================
-local HOST = "http://192.168.1.20:8080" -- 你的 Go 后端地址
+local HOST = "http://127.0.0.1:8080" -- 你的 Go 后端地址
 local FILES = {
     "main.lua",
     "lib/config.lua",
