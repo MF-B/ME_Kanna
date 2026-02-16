@@ -78,6 +78,16 @@ local function receiveLoop(ws)
     end
 end
 
+local function craftEventLoop(ws)
+    while true do
+        local _, isError, taskId, message = os.pullEvent("me_crafting")
+        print("[CraftEvent] id=" .. tostring(taskId) .. " err=" .. tostring(isError) .. " msg=" .. tostring(message))
+        pcall(function()
+            util.sendJson(ws, packets.craftStatus(config.DEVICE_ID, taskId, isError, message))
+        end)
+    end
+end
+
 local function runSession(ws)
     -- 启动时强制同步一次
     whitelist.sync(config.API_URL, config.SYNC_INTERVAL, true)
@@ -85,7 +95,8 @@ local function runSession(ws)
     print("System Online.")
     parallel.waitForAny(
         function() sendLoop(ws) end,
-        function() receiveLoop(ws) end
+        function() receiveLoop(ws) end,
+        function() craftEventLoop(ws) end
     )
 end
 

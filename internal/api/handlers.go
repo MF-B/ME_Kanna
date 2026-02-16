@@ -77,6 +77,8 @@ func HandleMinecraft(c *gin.Context) {
 			service.ProcessCraftablesUpdate(msg.ID, msg.Craftables)
 		case "craft_result":
 			service.BroadcastCraftResult(msg)
+		case "craft_status":
+			service.BroadcastCraftStatus(msg)
 		}
 	}
 

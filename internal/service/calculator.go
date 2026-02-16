@@ -294,6 +294,21 @@ func BroadcastCraftResult(msg model.IncomingMessage) {
 	}
 }
 
+func BroadcastCraftStatus(msg model.IncomingMessage) {
+	s := store.Global
+	payload := gin.H{
+		"type":    "craft_status",
+		"taskId":  msg.TaskID,
+		"error":   msg.Error,
+		"message": msg.Message,
+	}
+	log.Printf("[CraftStatus] taskId=%s error=%v msg=%s",
+		msg.TaskID, msg.Error, msg.Message)
+	for client := range s.WebClients {
+		_ = client.WriteJSON(payload)
+	}
+}
+
 func resolveNetworkID(deviceID string) string {
 	trimmed := strings.TrimSpace(deviceID)
 	if trimmed != "" {

@@ -56,4 +56,14 @@ function M.craftResult(deviceId, itemId, count, success, taskId, errMsg)
     }
 end
 
+function M.craftStatus(deviceId, taskId, isError, message)
+    return {
+        type = "craft_status",
+        id = deviceId,
+        taskId = tostring(taskId or ""),
+        error = isError and true or false,
+        message = message or ""
+    }
+end
+
 return M

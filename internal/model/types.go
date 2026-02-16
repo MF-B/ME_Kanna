@@ -114,6 +114,7 @@ type IncomingMessage struct {
 	Success bool   `json:"success"`
 	TaskID  string `json:"taskId"`
 	Error   string `json:"error"`
+	Message string `json:"message"`
 }
 
 // Command 控制指令
