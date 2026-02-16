@@ -54,11 +54,11 @@
             <div class="storage-details">
                <div class="detail-box">
                   <h4>{{ t('SYSTEM.INTERNAL') }}</h4>
-                  <p>{{ formatCompact(systemStatus.storage.itemUsed) }} / {{ formatCompact(systemStatus.storage.itemTotal) }}</p>
+                  <p>{{ formatCompact(systemStatus.storage.itemUsed) }} / {{ formatCompact(effectiveInternalTotal) }}</p>
                </div>
                <div class="detail-box">
                   <h4>{{ t('SYSTEM.EXTERNAL') }}</h4>
-                  <p>{{ formatCompact(systemStatus.storage.fluidUsed) }} / {{ formatCompact(systemStatus.storage.fluidTotal) }}</p>
+                  <p>{{ formatCompact(systemStatus.storage.itemExternalUsed) }} / {{ formatCompact(effectiveExternalTotal) }}</p>
                </div>
             </div>
           </div>
@@ -98,6 +98,14 @@ const totalStorageCapacity = computed(() => props.storageTotalCapacity)
 const totalStoragePercent = computed(() => {
   if (!totalStorageCapacity.value) return 0
   return Math.floor((totalStorageUsed.value / totalStorageCapacity.value) * 100)
+})
+
+// AE2 Storage Bus 可能 used > total，取 max 作为显示容量
+const effectiveInternalTotal = computed(() => {
+  return Math.max(props.systemStatus.storage.itemTotal || 0, props.systemStatus.storage.itemUsed || 0)
+})
+const effectiveExternalTotal = computed(() => {
+  return Math.max(props.systemStatus.storage.itemExternalTotal || 0, props.systemStatus.storage.itemExternalUsed || 0)
 })
 </script>
 

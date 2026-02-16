@@ -136,7 +136,12 @@ export function useSystemData() {
   const storageColor = computed(() => storagePercent.value > 90 ? '#ff6b6b' : '#5d8aff')
 
   const storageTotalCapacity = computed(() => {
-    return (systemStatus.value.storage.itemTotal || 0) + (systemStatus.value.storage.itemExternalTotal || 0)
+    const intTotal = systemStatus.value.storage.itemTotal || 0
+    const extTotal = systemStatus.value.storage.itemExternalTotal || 0
+    const intUsed = systemStatus.value.storage.itemUsed || 0
+    const extUsed = systemStatus.value.storage.itemExternalUsed || 0
+    // AE2 Storage Bus 可能报告 used > total，取 max 作为有效容量
+    return Math.max(intTotal, intUsed) + Math.max(extTotal, extUsed)
   })
 
   const storageTotalUsed = computed(() => {
@@ -154,13 +159,18 @@ export function useSystemData() {
   })
 
   const storageInternalUsage = computed(() => {
-    if (!systemStatus.value.storage.itemTotal) return 0
-    return Math.min((systemStatus.value.storage.itemUsed / systemStatus.value.storage.itemTotal) * 100, 100)
+    const total = systemStatus.value.storage.itemTotal
+    if (!total) return 0
+    return Math.min((systemStatus.value.storage.itemUsed / total) * 100, 100)
   })
 
   const storageExternalUsage = computed(() => {
-    if (!systemStatus.value.storage.itemExternalTotal) return 0
-    return Math.min((systemStatus.value.storage.itemExternalUsed / systemStatus.value.storage.itemExternalTotal) * 100, 100)
+    const total = systemStatus.value.storage.itemExternalTotal
+    const used = systemStatus.value.storage.itemExternalUsed
+    if (!total && !used) return 0
+    // AE2 Storage Bus: used 可能远大于 total，此时显示 100%
+    const effectiveTotal = Math.max(total, used) || 1
+    return Math.min((used / effectiveTotal) * 100, 100)
   })
 
   const netRateClass = computed(() => {
