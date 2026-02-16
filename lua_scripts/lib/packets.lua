@@ -44,4 +44,16 @@ function M.craftablesUpdate(deviceId, craftables, requestId)
     return payload
 end
 
+function M.craftResult(deviceId, itemId, count, success, taskId, errMsg)
+    return {
+        type = "craft_result",
+        id = deviceId,
+        itemId = itemId,
+        count = count or 0,
+        success = success,
+        taskId = taskId or "",
+        error = errMsg or ""
+    }
+end
+
 return M

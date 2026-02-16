@@ -41,9 +41,10 @@ func ProcessCraftablesUpdate(deviceID string, list []model.CraftableItem) {
 			itemName = itemID
 		}
 		next[itemID] = model.CraftableItem{
-			ItemID:   itemID,
-			ItemName: itemName,
-			Count:    item.Count,
+			ItemID:      itemID,
+			ItemName:    itemName,
+			Fingerprint: strings.TrimSpace(item.Fingerprint),
+			Count:       item.Count,
 		}
 	}
 
@@ -88,9 +89,11 @@ func GetCraftablesSnapshot() ([]model.CraftableItem, int64) {
 
 	for index := range items {
 		displayName, err := GetItemDisplayName(items[index].ItemID)
-		if err == nil && strings.TrimSpace(displayName) != "" {
+		if err == nil && strings.TrimSpace(displayName) != "" && displayName != items[index].ItemID {
+			// 语言文件解析成功且不是 fallback 到 itemID，覆盖
 			items[index].ItemName = displayName
 		}
+		// 否则保留 Lua 原始 displayName 作为兜底
 	}
 
 	return items, lastUpdated

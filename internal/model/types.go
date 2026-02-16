@@ -92,9 +92,10 @@ type AutoCraftTask struct {
 }
 
 type CraftableItem struct {
-	ItemID   string `json:"itemId"`
-	ItemName string `json:"itemName"`
-	Count    int64  `json:"count,omitempty"`
+	ItemID      string `json:"itemId"`
+	ItemName    string `json:"itemName"`
+	Fingerprint string `json:"fingerprint,omitempty"`
+	Count       int64  `json:"count,omitempty"`
 }
 
 // IncomingMessage 统一接收 Lua 消息
@@ -106,8 +107,13 @@ type IncomingMessage struct {
 	Name             string          `json:"name"`
 	Delta            int64           `json:"delta"`
 	ItemID           string          `json:"itemId"`
+	Count            int64           `json:"count"`
 	Craftables       []CraftableItem `json:"craftables"`
 	WhitelistVersion json.RawMessage `json:"whitelist_version"`
+	// craft_result 字段
+	Success bool   `json:"success"`
+	TaskID  string `json:"taskId"`
+	Error   string `json:"error"`
 }
 
 // Command 控制指令

@@ -95,4 +95,40 @@ function M.craft(bridge, itemId, count)
     return nil, err or "craft failed"
 end
 
+-- ========== 合成任务查询 ==========
+
+function M.getCraftingTasks(bridge)
+    if not bridge or not bridge.getCraftingTasks then return {} end
+    return bridge.getCraftingTasks() or {}
+end
+
+function M.getCraftingTask(bridge, taskId)
+    if not bridge or not bridge.getCraftingTask then return nil, "no getCraftingTask api" end
+    return bridge.getCraftingTask(taskId)
+end
+
+function M.getCraftingCPUs(bridge)
+    if not bridge or not bridge.getCraftingCPUs then return {} end
+    return bridge.getCraftingCPUs() or {}
+end
+
+-- ========== 配方查询 ==========
+
+function M.getPatterns(bridge, filter)
+    if not bridge or not bridge.getPatterns then return {} end
+    return bridge.getPatterns(filter or {}) or {}
+end
+
+-- ========== 任务控制 ==========
+
+function M.cancelCraftingTasks(bridge, filter)
+    if not bridge or not bridge.cancelCraftingTasks then return 0 end
+    return bridge.cancelCraftingTasks(filter or {}) or 0
+end
+
+function M.isCraftingItem(bridge, filter)
+    if not bridge or not bridge.isCrafting then return false end
+    return bridge.isCrafting(filter or {})
+end
+
 return M

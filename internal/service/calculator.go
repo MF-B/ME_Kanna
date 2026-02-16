@@ -197,9 +197,6 @@ func updateSystemEnergy(now time.Time, report model.LuaReport, systemStats *mode
 	if systemStats == nil || report.Energy == nil {
 		return
 	}
-	if report.Energy == nil {
-		return
-	}
 	if report.Energy.EnergyMax > 0 {
 		systemStats.EnergyStats.EnergyStored = report.Energy.EnergyStored
 		systemStats.EnergyStats.EnergyMax = report.Energy.EnergyMax
@@ -216,6 +213,10 @@ func updateSystemStorage(now time.Time, report model.LuaReport, systemStats *mod
 	}
 
 	systemStats.Storage = *report.Storage
+	// 计算 Available = Total - Used
+	systemStats.Storage.ItemAvailable = systemStats.Storage.ItemTotal - systemStats.Storage.ItemUsed
+	systemStats.Storage.ItemExternalAvailable = systemStats.Storage.ItemExternalTotal - systemStats.Storage.ItemExternalUsed
+	systemStats.Storage.FluidAvailable = systemStats.Storage.FluidTotal - systemStats.Storage.FluidUsed
 	systemStats.LastUpdated = now.Unix()
 }
 
@@ -272,6 +273,23 @@ func BroadcastToWeb() {
 
 	for client := range s.WebClients {
 		// 忽略错误，简单处理
+		_ = client.WriteJSON(payload)
+	}
+}
+
+func BroadcastCraftResult(msg model.IncomingMessage) {
+	s := store.Global
+	payload := gin.H{
+		"type":    "craft_result",
+		"itemId":  msg.ItemID,
+		"count":   msg.Count,
+		"success": msg.Success,
+		"taskId":  msg.TaskID,
+		"error":   msg.Error,
+	}
+	log.Printf("[CraftResult] item=%s count=%d success=%v taskId=%s err=%s",
+		msg.ItemID, msg.Count, msg.Success, msg.TaskID, msg.Error)
+	for client := range s.WebClients {
 		_ = client.WriteJSON(payload)
 	}
 }

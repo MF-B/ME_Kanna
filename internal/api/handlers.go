@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"mineCCT/internal/model"
 	"mineCCT/internal/service"
@@ -54,16 +53,9 @@ func HandleMinecraft(c *gin.Context) {
 		}
 
 		if msg.ID != "" && !isRegistered {
-			if msg.Name == "Main Storage" {
-				service.SetMainDeviceID(msg.ID)
-			}
 			currentDeviceID = msg.ID
-			s := store.Global
-			s.Mutex.Lock()
-			s.DeviceConns[currentDeviceID] = ws
-			s.Mutex.Unlock()
-			isRegistered = true // 标记已注册，下次跳过
-			log.Printf("[MC] Device Registered: %s", currentDeviceID)
+			service.RegisterDevice(currentDeviceID, msg.Data.Name, ws)
+			isRegistered = true
 		}
 
 		clientVersion := parseWhitelistVersion(msg.WhitelistVersion)
@@ -83,15 +75,13 @@ func HandleMinecraft(c *gin.Context) {
 			service.ProcessFlowUpdate(msg)
 		case "craftables":
 			service.ProcessCraftablesUpdate(msg.ID, msg.Craftables)
+		case "craft_result":
+			service.BroadcastCraftResult(msg)
 		}
 	}
 
 	if currentDeviceID != "" {
-		s := store.Global
-		s.Mutex.Lock()
-		delete(s.DeviceConns, currentDeviceID)
-		s.Mutex.Unlock()
-		log.Printf("[MC] Device [%s] Disconnected", currentDeviceID)
+		service.UnregisterDevice(currentDeviceID)
 	}
 }
 
@@ -172,11 +162,7 @@ func HandleIcon(c *gin.Context) {
 
 func HandleItemName(c *gin.Context) {
 	fullID := c.Param("id")
-	name, err := service.GetItemDisplayName(fullID)
-	if err != nil {
-		c.JSON(200, gin.H{"id": fullID, "name": name})
-		return
-	}
+	name, _ := service.GetItemDisplayName(fullID)
 	c.JSON(200, gin.H{"id": fullID, "name": name})
 }
 
@@ -198,12 +184,6 @@ type autoCraftTaskPatchRequest struct {
 }
 
 func HandleConfigUpdate(c *gin.Context) {
-	_, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		c.JSON(400, gin.H{"error": "invalid request body"})
-		return
-	}
-
 	var req whitelistUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, gin.H{"error": "invalid json"})

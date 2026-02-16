@@ -69,15 +69,17 @@ local function receiveLoop(ws)
                     ae_device = aeBridge.ensureBridge(ae_device)
                     if ae_device then
                         local task, err = aeBridge.craft(ae_device, itemId, count)
-                        local ok = task ~= nil
-                        if ok then
-                            local craftId = task.id or "?"
+                        if task then
+                            local craftId = task.id or ""
                             print("Craft queued: " .. tostring(itemId) .. " x" .. tostring(count) .. " (id=" .. tostring(craftId) .. ")")
+                            util.sendJson(ws, packets.craftResult(config.DEVICE_ID, itemId, count, true, craftId, nil))
                         else
                             print("Craft failed: " .. tostring(itemId) .. " x" .. tostring(count) .. " reason=" .. tostring(err))
+                            util.sendJson(ws, packets.craftResult(config.DEVICE_ID, itemId, count, false, nil, tostring(err)))
                         end
                     else
                         print("Craft failed: no ME Bridge")
+                        util.sendJson(ws, packets.craftResult(config.DEVICE_ID, itemId, count, false, nil, "no ME Bridge"))
                     end
                 else
                     print("Craft ignored: missing item id")
