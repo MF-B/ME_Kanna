@@ -96,7 +96,7 @@ export const useSystemStore = defineStore('system', () => {
     if (num === null || num === undefined) return '0'
     return Intl.NumberFormat('en-US', {
       notation: 'compact',
-      maximumFractionDigits: 1
+      maximumSignificantDigits: 3
     }).format(num)
   }
 

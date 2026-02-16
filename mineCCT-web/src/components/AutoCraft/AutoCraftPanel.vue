@@ -318,29 +318,38 @@ const updateDetailVisible = (v) => setDetailVisible(v)
 
 .overlay-count {
   position: absolute;
-  bottom: 4px;
-  right: 3px;
+  bottom: 7px;
+  right: 4px;
   font-family: var(--font-nums);
-  font-size: 1.1rem;
+  font-size: 1.4rem;
   color: #ffffff;
   text-align: right;
   z-index: 2;
   pointer-events: none;
   line-height: 1;
   text-shadow: 
-    -2px -2px 0 #5d4037,  
-     2px -2px 0 #5d4037,
-    -2px  2px 0 #5d4037,
-     2px  2px 0 #5d4037,
-    -2px 0 0 #5d4037,
-     2px 0 0 #5d4037,
-     0 -2px 0 #5d4037,
-     0 2px 0 #5d4037;
+    -2.5px -2.5px 0 #5d4037,  
+     2.5px -2.5px 0 #5d4037,
+    -2.5px  2.5px 0 #5d4037,
+     2.5px  2.5px 0 #5d4037,
+    -2.5px 0 0 #5d4037,
+     2.5px 0 0 #5d4037,
+     0 -2.5px 0 #5d4037,
+     0 2.5px 0 #5d4037;
 }
 
 @media (max-width: 767px) {
   .overlay-count {
-    font-size: 0.9rem;
+    font-size: 1.2rem;
+    text-shadow: 
+      -2px -2px 0 #5d4037,  
+       2px -2px 0 #5d4037,
+      -2px  2px 0 #5d4037,
+       2px  2px 0 #5d4037,
+      -2px 0 0 #5d4037,
+       2px 0 0 #5d4037,
+       0 -2px 0 #5d4037,
+       0 2px 0 #5d4037;
   }
   .status-triangle {
     top: -14px;
