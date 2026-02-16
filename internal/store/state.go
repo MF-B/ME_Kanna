@@ -25,6 +25,8 @@ type StateManager struct {
 
 	Networks map[string]*model.SystemStats
 
+	BridgeDebug map[string]*model.BridgeDebugPayload
+
 	// 元数据
 	Meta SystemMeta
 }
@@ -35,7 +37,8 @@ var Global = &StateManager{
 	DeviceConns: make(map[string]*websocket.Conn),
 	WebClients:  make(map[*websocket.Conn]bool),
 
-	Networks: make(map[string]*model.SystemStats),
+	Networks:    make(map[string]*model.SystemStats),
+	BridgeDebug: make(map[string]*model.BridgeDebugPayload),
 
 	Meta: SystemMeta{
 		DeviceRoles: make(map[string]string),
@@ -73,6 +76,34 @@ func (s *StateManager) GetAllNetworks() map[string]*model.SystemStats {
 	// 生产环境建议 copy 一份 map
 	copyMap := make(map[string]*model.SystemStats)
 	for k, v := range s.Networks {
+		copyMap[k] = v
+	}
+	return copyMap
+}
+
+func (s *StateManager) SetBridgeDebug(deviceID string, payload *model.BridgeDebugPayload) {
+	if deviceID == "" || payload == nil {
+		return
+	}
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
+	s.BridgeDebug[deviceID] = payload
+}
+
+func (s *StateManager) GetBridgeDebug(deviceID string) *model.BridgeDebugPayload {
+	if deviceID == "" {
+		return nil
+	}
+	s.Mutex.RLock()
+	defer s.Mutex.RUnlock()
+	return s.BridgeDebug[deviceID]
+}
+
+func (s *StateManager) GetAllBridgeDebug() map[string]*model.BridgeDebugPayload {
+	s.Mutex.RLock()
+	defer s.Mutex.RUnlock()
+	copyMap := make(map[string]*model.BridgeDebugPayload)
+	for k, v := range s.BridgeDebug {
 		copyMap[k] = v
 	}
 	return copyMap

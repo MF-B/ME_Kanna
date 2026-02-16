@@ -31,6 +31,8 @@ func main() {
 	r.GET("/icon/:id", api.HandleIcon)
 	r.GET("/item-name/:id", api.HandleItemName)
 	r.GET("/config/whitelist", api.HandleConfig)
+	r.GET("/debug/bridge", api.HandleBridgeDebug)
+	r.POST("/debug/craft", api.HandleDebugCraft)
 	r.POST("/config/whitelist", api.HandleConfigUpdate)
 	r.PUT("/config/whitelist", api.HandleConfigUpdate)
 	r.GET("/autocraft/craftables", api.HandleAutoCraftables)

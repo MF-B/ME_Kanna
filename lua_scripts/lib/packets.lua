@@ -44,4 +44,12 @@ function M.craftablesUpdate(deviceId, craftables, requestId)
     return payload
 end
 
+function M.bridgeDebug(deviceId, debugPayload)
+    return {
+        type = "debug_bridge",
+        id = deviceId,
+        debug = debugPayload
+    }
+end
+
 return M

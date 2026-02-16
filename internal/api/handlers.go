@@ -9,6 +9,8 @@ import (
 	"mineCCT/internal/service"
 	"mineCCT/internal/store"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -83,6 +85,10 @@ func HandleMinecraft(c *gin.Context) {
 			service.ProcessFlowUpdate(msg)
 		case "craftables":
 			service.ProcessCraftablesUpdate(msg.ID, msg.Craftables)
+		case "debug_bridge":
+			if msg.Debug != nil {
+				store.Global.SetBridgeDebug(msg.ID, msg.Debug)
+			}
 		}
 	}
 
@@ -187,6 +193,65 @@ func HandleConfig(c *gin.Context) {
 		items, version = service.GetWhitelistSnapshot()
 	}
 	c.JSON(200, gin.H{"monitored_items": items, "version": version})
+}
+
+func HandleBridgeDebug(c *gin.Context) {
+	target := c.Query("target")
+	if target != "" {
+		payload := store.Global.GetBridgeDebug(target)
+		if payload == nil {
+			c.JSON(404, gin.H{"error": "not found"})
+			return
+		}
+		c.JSON(200, gin.H{"id": target, "debug": payload})
+		return
+	}
+
+	payloads := store.Global.GetAllBridgeDebug()
+	c.JSON(200, gin.H{"items": payloads})
+}
+
+func HandleDebugCraft(c *gin.Context) {
+	itemID := strings.TrimSpace(c.Query("itemId"))
+	if itemID == "" {
+		itemID = "ae2:certus_quartz_dust"
+	}
+
+	count := int64(16)
+	if rawCount := strings.TrimSpace(c.Query("count")); rawCount != "" {
+		if parsed, err := strconv.ParseInt(rawCount, 10, 64); err == nil && parsed > 0 {
+			count = parsed
+		}
+	}
+
+	target := strings.TrimSpace(c.Query("target"))
+	if target == "" {
+		target = service.GetMainDeviceID()
+	}
+	if target == "" {
+		c.JSON(404, gin.H{"error": "no target device"})
+		return
+	}
+
+	s := store.Global
+	s.Mutex.RLock()
+	conn := s.DeviceConns[target]
+	s.Mutex.RUnlock()
+	if conn == nil {
+		c.JSON(404, gin.H{"error": "device offline"})
+		return
+	}
+
+	if err := conn.WriteJSON(gin.H{
+		"type":   "craft",
+		"itemId": itemID,
+		"count":  count,
+	}); err != nil {
+		c.JSON(500, gin.H{"error": "send failed"})
+		return
+	}
+
+	c.JSON(200, gin.H{"ok": true, "target": target, "itemId": itemID, "count": count})
 }
 
 type whitelistUpdateRequest struct {

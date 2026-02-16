@@ -1,0 +1,1096 @@
+{
+    "items": {
+        "ae_hub": {
+            "timestamp": 1771216537550,
+            "results": {
+                "getCells": {
+                    "ok": true,
+                    "dataType": "table",
+                    "data": [
+                        {
+                            "bytes": 1024,
+                            "bytesPerType": 8,
+                            "fuzzyMode": "IGNORE_ALL",
+                            "item": {
+                                "name": "ae2:fluid_storage_cell_1k",
+                                "tags": {}
+                            },
+                            "totalTypes": 18,
+                            "type": "ae2:f",
+                            "usedBytes": 681
+                        },
+                        {
+                            "bytes": 1024,
+                            "bytesPerType": 8,
+                            "fuzzyMode": "IGNORE_ALL",
+                            "item": {
+                                "name": "ae2:item_storage_cell_1k",
+                                "tags": "\u003cref\u003e"
+                            },
+                            "totalTypes": 63,
+                            "type": "ae2:i",
+                            "usedBytes": 11
+                        },
+                        {
+                            "bytes": 4096,
+                            "bytesPerType": 32,
+                            "fuzzyMode": "IGNORE_ALL",
+                            "item": {
+                                "name": "ae2:item_storage_cell_4k",
+                                "tags": "\u003cref\u003e"
+                            },
+                            "totalTypes": 63,
+                            "type": "ae2:i",
+                            "usedBytes": 0
+                        }
+                    ]
+                },
+                "getConfiguration": {
+                    "ok": true,
+                    "dataType": "table",
+                    "data": {}
+                },
+                "getCraftableItems": {
+                    "ok": true,
+                    "dataType": "table",
+                    "data": [
+                        {
+                            "components": {},
+                            "count": 11,
+                            "displayName": "[Fluix Dust]",
+                            "fingerprint": "-4941552395787903306",
+                            "isCraftable": true,
+                            "maxStackSize": 64,
+                            "name": "ae2:fluix_dust",
+                            "tags": [
+                                "minecraft:item/c:dusts/fluix",
+                                "minecraft:item/supplementaries:hourglass_dusts",
+                                "minecraft:item/minecolonies:reduceable_ingredient",
+                                "minecraft:item/c:dusts"
+                            ]
+                        },
+                        {
+                            "components": {},
+                            "count": 12,
+                            "displayName": "[Fluix Crystal]",
+                            "fingerprint": "-705246434832866226",
+                            "isCraftable": true,
+                            "maxStackSize": 64,
+                            "name": "ae2:fluix_crystal",
+                            "tags": [
+                                "minecraft:item/c:gems",
+                                "minecraft:item/minecolonies:reduceable_ingredient",
+                                "minecraft:item/silentgems:gem_bag_can_store",
+                                "minecraft:item/silentgear:imperial_drops",
+                                "minecraft:item/ae2:all_fluix",
+                                "minecraft:item/silentgear:greedy_magnet_attracted",
+                                "minecraft:item/c:gems/fluix"
+                            ]
+                        },
+                        {
+                            "components": {},
+                            "count": 2,
+                            "displayName": "[Calculation Processor]",
+                            "fingerprint": "-27119985264691519",
+                            "isCraftable": true,
+                            "maxStackSize": 64,
+                            "name": "ae2:calculation_processor",
+                            "tags": {}
+                        },
+                        {
+                            "components": {},
+                            "count": 38,
+                            "displayName": "[Charged Certus Quartz Crystal]",
+                            "fingerprint": "-7642995012671825703",
+                            "isCraftable": true,
+                            "maxStackSize": 64,
+                            "name": "ae2:charged_certus_quartz_crystal",
+                            "tags": [
+                                "minecraft:item/c:gems/certus_quartz",
+                                "minecraft:item/ars_nouveau:golem/shard",
+                                "minecraft:item/silentgems:gem_bag_can_store",
+                                "minecraft:item/c:gems",
+                                "minecraft:item/silentgear:greedy_magnet_attracted",
+                                "minecraft:item/minecolonies:reduceable_ingredient",
+                                "minecraft:item/ae2:all_quartz",
+                                "minecraft:item/ae2:all_certus_quartz",
+                                "minecraft:item/silentgear:imperial_drops"
+                            ]
+                        },
+                        {
+                            "components": {},
+                            "count": 2,
+                            "displayName": "[Printed Silicon]",
+                            "fingerprint": "-3510363561668891138",
+                            "isCraftable": true,
+                            "maxStackSize": 64,
+                            "name": "ae2:printed_silicon",
+                            "tags": "\u003cref\u003e"
+                        },
+                        {
+                            "components": {},
+                            "count": 53,
+                            "displayName": "[Certus Quartz Dust]",
+                            "fingerprint": "7244626626843091630",
+                            "isCraftable": true,
+                            "maxStackSize": 64,
+                            "name": "ae2:certus_quartz_dust",
+                            "tags": [
+                                "minecraft:item/c:dusts",
+                                "minecraft:item/ae2:all_quartz_dust",
+                                "minecraft:item/supplementaries:hourglass_dusts",
+                                "minecraft:item/c:dusts/certus_quartz",
+                                "minecraft:item/minecolonies:reduceable_ingredient"
+                            ]
+                        },
+                        {
+                            "components": {},
+                            "count": 0,
+                            "displayName": "[Printed Calculation Circuit]",
+                            "fingerprint": "-7346726808593767279",
+                            "isCraftable": true,
+                            "maxStackSize": 64,
+                            "name": "ae2:printed_calculation_processor",
+                            "tags": "\u003cref\u003e"
+                        },
+                        {
+                            "components": {},
+                            "count": 582,
+                            "displayName": "[Certus Quartz Crystal]",
+                            "fingerprint": "-5358454928553384215",
+                            "isCraftable": true,
+                            "maxStackSize": 64,
+                            "name": "ae2:certus_quartz_crystal",
+                            "tags": [
+                                "minecraft:item/c:gems/certus_quartz",
+                                "minecraft:item/ars_nouveau:golem/shard",
+                                "minecraft:item/silentgems:gem_bag_can_store",
+                                "minecraft:item/c:gems",
+                                "minecraft:item/silentgear:greedy_magnet_attracted",
+                                "minecraft:item/minecolonies:reduceable_ingredient",
+                                "minecraft:item/ae2:all_quartz",
+                                "minecraft:item/ae2:all_certus_quartz",
+                                "minecraft:item/silentgear:imperial_drops"
+                            ]
+                        },
+                        {
+                            "components": {},
+                            "count": 3,
+                            "displayName": "[Logic Processor]",
+                            "fingerprint": "4129529007986185755",
+                            "isCraftable": true,
+                            "maxStackSize": 64,
+                            "name": "ae2:logic_processor",
+                            "tags": "\u003cref\u003e"
+                        },
+                        {
+                            "components": {},
+                            "count": 0,
+                            "displayName": "[Printed Logic Circuit]",
+                            "fingerprint": "-7100533842676925606",
+                            "isCraftable": true,
+                            "maxStackSize": 64,
+                            "name": "ae2:printed_logic_processor",
+                            "tags": "\u003cref\u003e"
+                        },
+                        {
+                            "components": {},
+                            "count": 3,
+                            "displayName": "[Quartz Glass]",
+                            "fingerprint": "-3616077736511432026",
+                            "isCraftable": true,
+                            "maxStackSize": 64,
+                            "name": "ae2:quartz_glass",
+                            "tags": [
+                                "minecraft:item/minecolonies:glassblower_smelting_product",
+                                "minecraft:item/minecolonies:glassblower_ingredient",
+                                "minecraft:item/minecolonies:reduceable_ingredient",
+                                "minecraft:item/c:glass_blocks"
+                            ]
+                        },
+                        {
+                            "components": {},
+                            "count": 11,
+                            "displayName": "[Silicon]",
+                            "fingerprint": "-5567948807080673122",
+                            "isCraftable": true,
+                            "maxStackSize": 64,
+                            "name": "ae2:silicon",
+                            "tags": [
+                                "minecraft:item/c:silicon"
+                            ]
+                        }
+                    ]
+                },
+                "getCraftingCPUs": {
+                    "ok": true,
+                    "dataType": "table",
+                    "data": [
+                        {
+                            "coProcessors": 1,
+                            "craftingJob": {
+                                "bridge_id": -1,
+                                "quantity": 16,
+                                "resource": {
+                                    "components": {},
+                                    "count": 16,
+                                    "displayName": "[Certus Quartz Dust]",
+                                    "fingerprint": "7244626626843091630",
+                                    "isCraftable": false,
+                                    "maxStackSize": 64,
+                                    "name": "ae2:certus_quartz_dust",
+                                    "tags": [
+                                        "minecraft:item/c:dusts",
+                                        "minecraft:item/ae2:all_quartz_dust",
+                                        "minecraft:item/supplementaries:hourglass_dusts",
+                                        "minecraft:item/c:dusts/certus_quartz",
+                                        "minecraft:item/minecolonies:reduceable_ingredient"
+                                    ]
+                                }
+                            },
+                            "isBusy": true,
+                            "name": "Unnamed",
+                            "selectionMode": "ANY",
+                            "storage": 65536
+                        }
+                    ]
+                },
+                "getCraftingTask": {
+                    "ok": false,
+                    "error": "skipped: DEBUG_TASK_ID not set"
+                },
+                "getCraftingTasks": {
+                    "ok": true,
+                    "dataType": "table",
+                    "data": {}
+                },
+                "getDrives": {
+                    "ok": true,
+                    "dataType": "table",
+                    "data": [
+                        {
+                            "cells": [
+                                {
+                                    "bytes": 1024,
+                                    "bytesPerType": 8,
+                                    "fuzzyMode": "IGNORE_ALL",
+                                    "item": {
+                                        "name": "ae2:fluid_storage_cell_1k",
+                                        "tags": "\u003cref\u003e"
+                                    },
+                                    "totalTypes": 18,
+                                    "type": "ae2:f",
+                                    "usedBytes": 681
+                                },
+                                {
+                                    "bytes": 1024,
+                                    "bytesPerType": 8,
+                                    "fuzzyMode": "IGNORE_ALL",
+                                    "item": {
+                                        "name": "ae2:item_storage_cell_1k",
+                                        "tags": "\u003cref\u003e"
+                                    },
+                                    "totalTypes": 63,
+                                    "type": "ae2:i",
+                                    "usedBytes": 11
+                                },
+                                {
+                                    "bytes": 4096,
+                                    "bytesPerType": 32,
+                                    "fuzzyMode": "IGNORE_ALL",
+                                    "item": {
+                                        "name": "ae2:item_storage_cell_4k",
+                                        "tags": "\u003cref\u003e"
+                                    },
+                                    "totalTypes": 63,
+                                    "type": "ae2:i",
+                                    "usedBytes": 0
+                                }
+                            ],
+                            "menuIcon": {
+                                "name": "ae2:drive",
+                                "tags": {}
+                            },
+                            "name": "ME Drive",
+                            "position": {
+                                "x": 1580,
+                                "y": 64,
+                                "z": -31
+                            },
+                            "priority": 200,
+                            "totalBytes": 6144,
+                            "usedBytes": 692
+                        }
+                    ]
+                },
+                "getName": {
+                    "ok": true,
+                    "dataType": "string",
+                    "dataValue": "ME Bridge"
+                },
+                "getPatterns": {
+                    "ok": true,
+                    "dataType": "table",
+                    "data": [
+                        {
+                            "inputs": [
+                                {
+                                    "multiplier": 5,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "[Certus Quartz Dust]",
+                                        "fingerprint": "7244626626843091630",
+                                        "isCraftable": false,
+                                        "maxStackSize": 64,
+                                        "name": "ae2:certus_quartz_dust",
+                                        "tags": [
+                                            "minecraft:item/c:dusts",
+                                            "minecraft:item/ae2:all_quartz_dust",
+                                            "minecraft:item/supplementaries:hourglass_dusts",
+                                            "minecraft:item/c:dusts/certus_quartz",
+                                            "minecraft:item/minecolonies:reduceable_ingredient"
+                                        ]
+                                    }
+                                },
+                                {
+                                    "multiplier": 4,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "[Glass]",
+                                        "fingerprint": "-914670032133452389",
+                                        "isCraftable": false,
+                                        "maxStackSize": 64,
+                                        "name": "minecraft:glass",
+                                        "tags": [
+                                            "minecraft:item/c:glass_blocks/cheap",
+                                            "minecraft:item/chipped:glass",
+                                            "minecraft:item/minecolonies:glassblower_ingredient",
+                                            "minecraft:item/c:glass_blocks",
+                                            "minecraft:item/minecolonies:reduceable_ingredient",
+                                            "minecraft:item/c:glass_blocks/colorless",
+                                            "minecraft:item/c:glass",
+                                            "minecraft:item/minecolonies:glassblower_smelting_product",
+                                            "minecraft:item/mekanism:colorable/glass"
+                                        ]
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "components": {},
+                                    "count": 4,
+                                    "displayName": "[Quartz Glass]",
+                                    "fingerprint": "-3616077736511432026",
+                                    "isCraftable": false,
+                                    "maxStackSize": 64,
+                                    "name": "ae2:quartz_glass",
+                                    "tags": "\u003cref\u003e"
+                                }
+                            ],
+                            "patternType": "crafting",
+                            "primaryOutput": {
+                                "components": {},
+                                "count": 4,
+                                "displayName": "[Quartz Glass]",
+                                "fingerprint": "-3616077736511432026",
+                                "isCraftable": false,
+                                "maxStackSize": 64,
+                                "name": "ae2:quartz_glass",
+                                "tags": [
+                                    "minecraft:item/minecolonies:glassblower_smelting_product",
+                                    "minecraft:item/minecolonies:glassblower_ingredient",
+                                    "minecraft:item/minecolonies:reduceable_ingredient",
+                                    "minecraft:item/c:glass_blocks"
+                                ]
+                            }
+                        },
+                        {
+                            "inputs": [
+                                {
+                                    "multiplier": 1,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "[Certus Quartz Dust]",
+                                        "fingerprint": "7244626626843091630",
+                                        "isCraftable": false,
+                                        "maxStackSize": 64,
+                                        "name": "ae2:certus_quartz_dust",
+                                        "tags": "\u003cref\u003e"
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "components": {},
+                                    "count": 2,
+                                    "displayName": "[Silicon]",
+                                    "fingerprint": "-5567948807080673122",
+                                    "isCraftable": false,
+                                    "maxStackSize": 64,
+                                    "name": "ae2:silicon",
+                                    "tags": "\u003cref\u003e"
+                                }
+                            ],
+                            "patternType": "processing",
+                            "primaryOutput": {
+                                "components": {},
+                                "count": 2,
+                                "displayName": "[Silicon]",
+                                "fingerprint": "-5567948807080673122",
+                                "isCraftable": false,
+                                "maxStackSize": 64,
+                                "name": "ae2:silicon",
+                                "tags": [
+                                    "minecraft:item/c:silicon"
+                                ]
+                            }
+                        },
+                        {
+                            "inputs": [
+                                {
+                                    "multiplier": 32,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "[Charged Certus Quartz Crystal]",
+                                        "fingerprint": "-7642995012671825703",
+                                        "isCraftable": false,
+                                        "maxStackSize": 64,
+                                        "name": "ae2:charged_certus_quartz_crystal",
+                                        "tags": [
+                                            "minecraft:item/c:gems/certus_quartz",
+                                            "minecraft:item/ars_nouveau:golem/shard",
+                                            "minecraft:item/silentgems:gem_bag_can_store",
+                                            "minecraft:item/c:gems",
+                                            "minecraft:item/silentgear:greedy_magnet_attracted",
+                                            "minecraft:item/minecolonies:reduceable_ingredient",
+                                            "minecraft:item/ae2:all_quartz",
+                                            "minecraft:item/ae2:all_certus_quartz",
+                                            "minecraft:item/silentgear:imperial_drops"
+                                        ]
+                                    }
+                                },
+                                {
+                                    "multiplier": 32,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "[Fluix Dust]",
+                                        "fingerprint": "-4941552395787903306",
+                                        "isCraftable": false,
+                                        "maxStackSize": 64,
+                                        "name": "ae2:fluix_dust",
+                                        "tags": [
+                                            "minecraft:item/c:dusts/fluix",
+                                            "minecraft:item/supplementaries:hourglass_dusts",
+                                            "minecraft:item/minecolonies:reduceable_ingredient",
+                                            "minecraft:item/c:dusts"
+                                        ]
+                                    }
+                                },
+                                {
+                                    "multiplier": 500,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "Water",
+                                        "fingerprint": "-6955975134772186855",
+                                        "fluidType": {
+                                            "canConvertToSource": true,
+                                            "canDrownIn": true,
+                                            "canExtinguish": true,
+                                            "canHydrate": true,
+                                            "canPushEntity": true,
+                                            "canSwim": true,
+                                            "density": 1000,
+                                            "supportsBoating": true,
+                                            "temperature": 300,
+                                            "viscosity": 1000
+                                        },
+                                        "isCraftable": false,
+                                        "name": "minecraft:water",
+                                        "tags": [
+                                            "minecraft:fluid/c:visual/water",
+                                            "minecraft:fluid/livingthings:seahorse_spawnable_on",
+                                            "minecraft:fluid/c:water",
+                                            "minecraft:fluid/create_aquatic_ambitions:mechanical_conduit_fuel",
+                                            "minecraft:fluid/the_bumblezone:honey_bee_leggings/removes_pollen",
+                                            "minecraft:fluid/livingthings:mantaray_spawnable_on",
+                                            "minecraft:fluid/minecraft:water",
+                                            "minecraft:fluid/aether:allowed_bucket_pickup",
+                                            "minecraft:fluid/create:bottomless/allow",
+                                            "minecraft:fluid/the_bumblezone:convertible_to_sugar_water",
+                                            "minecraft:fluid/create:fan_processing_catalysts/splashing",
+                                            "minecraft:fluid/livingthings:shark_spawnable_on",
+                                            "minecraft:fluid/glassential:clear_fluid_glass_fluids"
+                                        ]
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "components": {},
+                                    "count": 64,
+                                    "displayName": "[Fluix Crystal]",
+                                    "fingerprint": "-705246434832866226",
+                                    "isCraftable": false,
+                                    "maxStackSize": 64,
+                                    "name": "ae2:fluix_crystal",
+                                    "tags": "\u003cref\u003e"
+                                }
+                            ],
+                            "patternType": "processing",
+                            "primaryOutput": {
+                                "components": {},
+                                "count": 64,
+                                "displayName": "[Fluix Crystal]",
+                                "fingerprint": "-705246434832866226",
+                                "isCraftable": false,
+                                "maxStackSize": 64,
+                                "name": "ae2:fluix_crystal",
+                                "tags": [
+                                    "minecraft:item/c:gems",
+                                    "minecraft:item/minecolonies:reduceable_ingredient",
+                                    "minecraft:item/silentgems:gem_bag_can_store",
+                                    "minecraft:item/silentgear:imperial_drops",
+                                    "minecraft:item/ae2:all_fluix",
+                                    "minecraft:item/silentgear:greedy_magnet_attracted",
+                                    "minecraft:item/c:gems/fluix"
+                                ]
+                            }
+                        },
+                        {
+                            "inputs": [
+                                {
+                                    "multiplier": 64,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "[Certus Quartz Crystal]",
+                                        "fingerprint": "-5358454928553384215",
+                                        "isCraftable": false,
+                                        "maxStackSize": 64,
+                                        "name": "ae2:certus_quartz_crystal",
+                                        "tags": [
+                                            "minecraft:item/c:gems/certus_quartz",
+                                            "minecraft:item/ars_nouveau:golem/shard",
+                                            "minecraft:item/silentgems:gem_bag_can_store",
+                                            "minecraft:item/c:gems",
+                                            "minecraft:item/silentgear:greedy_magnet_attracted",
+                                            "minecraft:item/minecolonies:reduceable_ingredient",
+                                            "minecraft:item/ae2:all_quartz",
+                                            "minecraft:item/ae2:all_certus_quartz",
+                                            "minecraft:item/silentgear:imperial_drops"
+                                        ]
+                                    }
+                                },
+                                {
+                                    "multiplier": 1000,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "Water",
+                                        "fingerprint": "-6955975134772186855",
+                                        "fluidType": {
+                                            "canConvertToSource": true,
+                                            "canDrownIn": true,
+                                            "canExtinguish": true,
+                                            "canHydrate": true,
+                                            "canPushEntity": true,
+                                            "canSwim": true,
+                                            "density": 1000,
+                                            "supportsBoating": true,
+                                            "temperature": 300,
+                                            "viscosity": 1000
+                                        },
+                                        "isCraftable": false,
+                                        "name": "minecraft:water",
+                                        "tags": "\u003cref\u003e"
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "components": {},
+                                    "count": 64,
+                                    "displayName": "[Charged Certus Quartz Crystal]",
+                                    "fingerprint": "-7642995012671825703",
+                                    "isCraftable": false,
+                                    "maxStackSize": 64,
+                                    "name": "ae2:charged_certus_quartz_crystal",
+                                    "tags": "\u003cref\u003e"
+                                }
+                            ],
+                            "patternType": "processing",
+                            "primaryOutput": {
+                                "components": {},
+                                "count": 64,
+                                "displayName": "[Charged Certus Quartz Crystal]",
+                                "fingerprint": "-7642995012671825703",
+                                "isCraftable": false,
+                                "maxStackSize": 64,
+                                "name": "ae2:charged_certus_quartz_crystal",
+                                "tags": "\u003cref\u003e"
+                            }
+                        },
+                        {
+                            "inputs": [
+                                {
+                                    "multiplier": 16,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "[Charged Certus Quartz Crystal]",
+                                        "fingerprint": "-7642995012671825703",
+                                        "isCraftable": false,
+                                        "maxStackSize": 64,
+                                        "name": "ae2:charged_certus_quartz_crystal",
+                                        "tags": "\u003cref\u003e"
+                                    }
+                                },
+                                {
+                                    "multiplier": 16,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "[Certus Quartz Dust]",
+                                        "fingerprint": "7244626626843091630",
+                                        "isCraftable": false,
+                                        "maxStackSize": 64,
+                                        "name": "ae2:certus_quartz_dust",
+                                        "tags": "\u003cref\u003e"
+                                    }
+                                },
+                                {
+                                    "multiplier": 500,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "Water",
+                                        "fingerprint": "-6955975134772186855",
+                                        "fluidType": {
+                                            "canConvertToSource": true,
+                                            "canDrownIn": true,
+                                            "canExtinguish": true,
+                                            "canHydrate": true,
+                                            "canPushEntity": true,
+                                            "canSwim": true,
+                                            "density": 1000,
+                                            "supportsBoating": true,
+                                            "temperature": 300,
+                                            "viscosity": 1000
+                                        },
+                                        "isCraftable": false,
+                                        "name": "minecraft:water",
+                                        "tags": "\u003cref\u003e"
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "components": {},
+                                    "count": 64,
+                                    "displayName": "[Certus Quartz Crystal]",
+                                    "fingerprint": "-5358454928553384215",
+                                    "isCraftable": false,
+                                    "maxStackSize": 64,
+                                    "name": "ae2:certus_quartz_crystal",
+                                    "tags": "\u003cref\u003e"
+                                }
+                            ],
+                            "patternType": "processing",
+                            "primaryOutput": {
+                                "components": {},
+                                "count": 64,
+                                "displayName": "[Certus Quartz Crystal]",
+                                "fingerprint": "-5358454928553384215",
+                                "isCraftable": false,
+                                "maxStackSize": 64,
+                                "name": "ae2:certus_quartz_crystal",
+                                "tags": "\u003cref\u003e"
+                            }
+                        },
+                        {
+                            "inputs": [
+                                {
+                                    "multiplier": 1,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "[Certus Quartz Crystal]",
+                                        "fingerprint": "-5358454928553384215",
+                                        "isCraftable": false,
+                                        "maxStackSize": 64,
+                                        "name": "ae2:certus_quartz_crystal",
+                                        "tags": "\u003cref\u003e"
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "components": {},
+                                    "count": 1,
+                                    "displayName": "[Certus Quartz Dust]",
+                                    "fingerprint": "7244626626843091630",
+                                    "isCraftable": false,
+                                    "maxStackSize": 64,
+                                    "name": "ae2:certus_quartz_dust",
+                                    "tags": "\u003cref\u003e"
+                                }
+                            ],
+                            "patternType": "processing",
+                            "primaryOutput": {
+                                "components": {},
+                                "count": 1,
+                                "displayName": "[Certus Quartz Dust]",
+                                "fingerprint": "7244626626843091630",
+                                "isCraftable": false,
+                                "maxStackSize": 64,
+                                "name": "ae2:certus_quartz_dust",
+                                "tags": "\u003cref\u003e"
+                            }
+                        },
+                        {
+                            "inputs": [
+                                {
+                                    "multiplier": 1,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "[Fluix Crystal]",
+                                        "fingerprint": "-705246434832866226",
+                                        "isCraftable": false,
+                                        "maxStackSize": 64,
+                                        "name": "ae2:fluix_crystal",
+                                        "tags": "\u003cref\u003e"
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "components": {},
+                                    "count": 1,
+                                    "displayName": "[Fluix Dust]",
+                                    "fingerprint": "-4941552395787903306",
+                                    "isCraftable": false,
+                                    "maxStackSize": 64,
+                                    "name": "ae2:fluix_dust",
+                                    "tags": "\u003cref\u003e"
+                                }
+                            ],
+                            "patternType": "processing",
+                            "primaryOutput": {
+                                "components": {},
+                                "count": 1,
+                                "displayName": "[Fluix Dust]",
+                                "fingerprint": "-4941552395787903306",
+                                "isCraftable": false,
+                                "maxStackSize": 64,
+                                "name": "ae2:fluix_dust",
+                                "tags": "\u003cref\u003e"
+                            }
+                        },
+                        {
+                            "inputs": [
+                                {
+                                    "multiplier": 1,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "[Printed Calculation Circuit]",
+                                        "fingerprint": "-7346726808593767279",
+                                        "isCraftable": false,
+                                        "maxStackSize": 64,
+                                        "name": "ae2:printed_calculation_processor",
+                                        "tags": {}
+                                    }
+                                },
+                                {
+                                    "multiplier": 1,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "[Redstone Dust]",
+                                        "fingerprint": "599652416185343944",
+                                        "isCraftable": false,
+                                        "maxStackSize": 64,
+                                        "name": "minecraft:redstone",
+                                        "tags": [
+                                            "minecraft:item/minecolonies:mechanic_ingredient",
+                                            "minecraft:item/c:dusts",
+                                            "minecraft:item/minecolonies:stonemason_ingredient_excluded",
+                                            "minecraft:item/theurgy:other_minerals",
+                                            "minecraft:item/supplementaries:hourglass_dusts",
+                                            "minecraft:item/mekanism:alloys/basic",
+                                            "minecraft:item/c:dusts/redstone",
+                                            "minecraft:item/minecraft:trim_materials",
+                                            "minecraft:item/minecolonies:sawmill_ingredient_excluded",
+                                            "minecraft:item/theurgy:other_minerals/mercury/low",
+                                            "minecraft:item/minecolonies:reduceable_ingredient",
+                                            "minecraft:item/eternal_starlight:golem_forge_locators",
+                                            "minecraft:item/minecolonies:blacksmith_ingredient_excluded",
+                                            "minecraft:item/mekanism:alloys",
+                                            "minecraft:item/ae2:p2p_attunements/redstone_p2p_tunnel"
+                                        ]
+                                    }
+                                },
+                                {
+                                    "multiplier": 1,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "[Printed Silicon]",
+                                        "fingerprint": "-3510363561668891138",
+                                        "isCraftable": false,
+                                        "maxStackSize": 64,
+                                        "name": "ae2:printed_silicon",
+                                        "tags": "\u003cref\u003e"
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "components": {},
+                                    "count": 1,
+                                    "displayName": "[Calculation Processor]",
+                                    "fingerprint": "-27119985264691519",
+                                    "isCraftable": false,
+                                    "maxStackSize": 64,
+                                    "name": "ae2:calculation_processor",
+                                    "tags": "\u003cref\u003e"
+                                }
+                            ],
+                            "patternType": "processing",
+                            "primaryOutput": {
+                                "components": {},
+                                "count": 1,
+                                "displayName": "[Calculation Processor]",
+                                "fingerprint": "-27119985264691519",
+                                "isCraftable": false,
+                                "maxStackSize": 64,
+                                "name": "ae2:calculation_processor",
+                                "tags": "\u003cref\u003e"
+                            }
+                        },
+                        {
+                            "inputs": [
+                                {
+                                    "multiplier": 1,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "[Printed Logic Circuit]",
+                                        "fingerprint": "-7100533842676925606",
+                                        "isCraftable": false,
+                                        "maxStackSize": 64,
+                                        "name": "ae2:printed_logic_processor",
+                                        "tags": "\u003cref\u003e"
+                                    }
+                                },
+                                {
+                                    "multiplier": 1,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "[Redstone Dust]",
+                                        "fingerprint": "599652416185343944",
+                                        "isCraftable": false,
+                                        "maxStackSize": 64,
+                                        "name": "minecraft:redstone",
+                                        "tags": "\u003cref\u003e"
+                                    }
+                                },
+                                {
+                                    "multiplier": 1,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "[Printed Silicon]",
+                                        "fingerprint": "-3510363561668891138",
+                                        "isCraftable": false,
+                                        "maxStackSize": 64,
+                                        "name": "ae2:printed_silicon",
+                                        "tags": "\u003cref\u003e"
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "components": {},
+                                    "count": 1,
+                                    "displayName": "[Logic Processor]",
+                                    "fingerprint": "4129529007986185755",
+                                    "isCraftable": false,
+                                    "maxStackSize": 64,
+                                    "name": "ae2:logic_processor",
+                                    "tags": "\u003cref\u003e"
+                                }
+                            ],
+                            "patternType": "processing",
+                            "primaryOutput": {
+                                "components": {},
+                                "count": 1,
+                                "displayName": "[Logic Processor]",
+                                "fingerprint": "4129529007986185755",
+                                "isCraftable": false,
+                                "maxStackSize": 64,
+                                "name": "ae2:logic_processor",
+                                "tags": "\u003cref\u003e"
+                            }
+                        },
+                        {
+                            "inputs": [
+                                {
+                                    "multiplier": 1,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "[Certus Quartz Crystal]",
+                                        "fingerprint": "-5358454928553384215",
+                                        "isCraftable": false,
+                                        "maxStackSize": 64,
+                                        "name": "ae2:certus_quartz_crystal",
+                                        "tags": "\u003cref\u003e"
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "components": {},
+                                    "count": 1,
+                                    "displayName": "[Printed Calculation Circuit]",
+                                    "fingerprint": "-7346726808593767279",
+                                    "isCraftable": false,
+                                    "maxStackSize": 64,
+                                    "name": "ae2:printed_calculation_processor",
+                                    "tags": "\u003cref\u003e"
+                                }
+                            ],
+                            "patternType": "processing",
+                            "primaryOutput": {
+                                "components": {},
+                                "count": 1,
+                                "displayName": "[Printed Calculation Circuit]",
+                                "fingerprint": "-7346726808593767279",
+                                "isCraftable": false,
+                                "maxStackSize": 64,
+                                "name": "ae2:printed_calculation_processor",
+                                "tags": "\u003cref\u003e"
+                            }
+                        },
+                        {
+                            "inputs": [
+                                {
+                                    "multiplier": 1,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "[Gold Ingot]",
+                                        "fingerprint": "8963042043502901555",
+                                        "isCraftable": false,
+                                        "maxStackSize": 64,
+                                        "name": "minecraft:gold_ingot",
+                                        "tags": [
+                                            "minecraft:item/irons_jewelry:loot_handler/medium_gearscore",
+                                            "minecraft:item/c:ingots/gold",
+                                            "minecraft:item/minecolonies:blacksmith_ingredient",
+                                            "minecraft:item/minecraft:beacon_payment_items",
+                                            "minecraft:item/minecraft:trim_materials",
+                                            "minecraft:item/minecolonies:reduceable_ingredient",
+                                            "minecraft:item/silentgear:greedy_magnet_attracted",
+                                            "minecraft:item/minecolonies:blacksmith_product",
+                                            "minecraft:item/minecraft:piglin_loved",
+                                            "minecraft:item/c:ingots",
+                                            "minecraft:item/irons_spellbooks:arcane_ingot_base",
+                                            "minecraft:item/minecolonies:reduceable_product_excluded",
+                                            "minecraft:item/mekanism:muffling_center",
+                                            "minecraft:item/theurgy:metals/mercury/medium",
+                                            "minecraft:item/minecolonies:sawmill_ingredient_excluded",
+                                            "minecraft:item/ae2:metal_ingots"
+                                        ]
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "components": {},
+                                    "count": 1,
+                                    "displayName": "[Printed Logic Circuit]",
+                                    "fingerprint": "-7100533842676925606",
+                                    "isCraftable": false,
+                                    "maxStackSize": 64,
+                                    "name": "ae2:printed_logic_processor",
+                                    "tags": "\u003cref\u003e"
+                                }
+                            ],
+                            "patternType": "processing",
+                            "primaryOutput": {
+                                "components": {},
+                                "count": 1,
+                                "displayName": "[Printed Logic Circuit]",
+                                "fingerprint": "-7100533842676925606",
+                                "isCraftable": false,
+                                "maxStackSize": 64,
+                                "name": "ae2:printed_logic_processor",
+                                "tags": "\u003cref\u003e"
+                            }
+                        },
+                        {
+                            "inputs": [
+                                {
+                                    "multiplier": 1,
+                                    "primaryInput": {
+                                        "components": {},
+                                        "count": 1,
+                                        "displayName": "[Silicon]",
+                                        "fingerprint": "-5567948807080673122",
+                                        "isCraftable": false,
+                                        "maxStackSize": 64,
+                                        "name": "ae2:silicon",
+                                        "tags": "\u003cref\u003e"
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "components": {},
+                                    "count": 1,
+                                    "displayName": "[Printed Silicon]",
+                                    "fingerprint": "-3510363561668891138",
+                                    "isCraftable": false,
+                                    "maxStackSize": 64,
+                                    "name": "ae2:printed_silicon",
+                                    "tags": "\u003cref\u003e"
+                                }
+                            ],
+                            "patternType": "processing",
+                            "primaryOutput": {
+                                "components": {},
+                                "count": 1,
+                                "displayName": "[Printed Silicon]",
+                                "fingerprint": "-3510363561668891138",
+                                "isCraftable": false,
+                                "maxStackSize": 64,
+                                "name": "ae2:printed_silicon",
+                                "tags": "\u003cref\u003e"
+                            }
+                        }
+                    ]
+                },
+                "isCraftable": {
+                    "ok": true,
+                    "dataType": "boolean",
+                    "dataValue": false
+                },
+                "isCrafting": {
+                    "ok": true,
+                    "dataType": "boolean",
+                    "dataValue": false
+                }
+            }
+        }
+    }
+}

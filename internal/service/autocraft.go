@@ -128,6 +128,12 @@ func RequestCraftablesRefresh(targetID, requestID string) bool {
 	return true
 }
 
+func GetMainDeviceID() string {
+	autoCraftState.mu.RLock()
+	defer autoCraftState.mu.RUnlock()
+	return strings.TrimSpace(autoCraftState.deviceID)
+}
+
 func BuildRecipeSnapshot(itemID string) *model.RecipeSnapshot {
 	itemID = strings.TrimSpace(itemID)
 	if itemID == "" {

@@ -97,17 +97,32 @@ type CraftableItem struct {
 	Count    int64  `json:"count,omitempty"`
 }
 
+type BridgeDebugResult struct {
+	Ok        bool                   `json:"ok"`
+	Error     string                 `json:"error,omitempty"`
+	DataType  string                 `json:"dataType,omitempty"`
+	DataValue interface{}            `json:"dataValue,omitempty"`
+	Data      interface{}            `json:"data,omitempty"`
+	Summary   map[string]interface{} `json:"summary,omitempty"`
+}
+
+type BridgeDebugPayload struct {
+	Timestamp int64                        `json:"timestamp"`
+	Results   map[string]BridgeDebugResult `json:"results"`
+}
+
 // IncomingMessage 统一接收 Lua 消息
 type IncomingMessage struct {
-	Type             string          `json:"type"`
-	Data             LuaReport       `json:"data"`
-	ID               string          `json:"id"`
-	RequestID        string          `json:"requestId"`
-	Name             string          `json:"name"`
-	Delta            int64           `json:"delta"`
-	ItemID           string          `json:"itemId"`
-	Craftables       []CraftableItem `json:"craftables"`
-	WhitelistVersion json.RawMessage `json:"whitelist_version"`
+	Type             string              `json:"type"`
+	Data             LuaReport           `json:"data"`
+	ID               string              `json:"id"`
+	RequestID        string              `json:"requestId"`
+	Name             string              `json:"name"`
+	Delta            int64               `json:"delta"`
+	ItemID           string              `json:"itemId"`
+	Craftables       []CraftableItem     `json:"craftables"`
+	Debug            *BridgeDebugPayload `json:"debug,omitempty"`
+	WhitelistVersion json.RawMessage     `json:"whitelist_version"`
 }
 
 // Command 控制指令
