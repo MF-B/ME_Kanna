@@ -126,7 +126,8 @@ const {
   formatRate,
   formatTime,
   applyUpdatePayload,
-  loadAutoCraftTasks
+  loadAutoCraftTasks,
+  fetchCraftables
 } = systemStore
 
 const { connected, connect, send } = useWebSocket({
@@ -148,7 +149,10 @@ const handleCommand = (payload) => {
 onMounted(async () => {
   connect()
   try {
-    await loadAutoCraftTasks()
+    await Promise.all([
+      loadAutoCraftTasks(),
+      fetchCraftables()
+    ])
   } catch (err) {
     console.error(err)
   }

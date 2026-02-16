@@ -1,121 +1,38 @@
 <template>
   <div class="autocraft-panel">
     <!-- Grid Layout -->
-    <div class="task-grid-container" v-if="sortedAutoCraftTasks.length">
+    <div class="task-grid-container" v-if="sortedCards.length">
       <div
-        v-for="(task, index) in sortedAutoCraftTasks"
-        :key="task.itemId"
+        v-for="(card, index) in sortedCards"
+        :key="card.itemId"
         class="task-card"
-        :class="{ pulse: !task.isActive }"
-        @click="openTaskDetail(task)"
-        :style="{ animationDelay: index * 0.05 + 's' }"
+        :class="{ dimmed: !card.hasTask || !card.isActive }"
+        @click="handleCardClick(card)"
+        :style="{ animationDelay: index * 0.03 + 's' }"
       >
         <!-- Main Card Content -->
         <div class="card-content">
-          <ItemIcon :item-id="task.itemId" class="task-icon" />
+          <ItemIcon :item-id="card.itemId" class="task-icon" />
           
           <!-- Status Triangle (Rotated Square) -->
           <div 
-            v-if="shouldShowTriangle(task)"
+            v-if="shouldShowTriangle(card)"
             class="status-triangle" 
-            :style="{ backgroundColor: getStatusColor(task) }"
+            :style="{ backgroundColor: getStatusColor(card) }"
           ></div>
 
           <!-- Overlay Quantity -->
-          <div class="overlay-count">{{ formatCompact(inventoryIndex[task.itemId] || 0) }}</div>
+          <div class="overlay-count">{{ formatCompact(getStock(card)) }}</div>
         </div>
       </div>
     </div>
 
-    <el-empty
-      v-else
-      :description="t('CRAFT.NO_TASKS')"
-      class="brutalist-empty"
-    />
+    <div v-else class="brutalist-empty">
+      <div class="empty-icon">⚙</div>
+      <p>{{ craftablesLoading ? t('CRAFT.LOADING') || '加载中...' : t('CRAFT.NO_TASKS') }}</p>
+    </div>
 
-    <!-- FAB -->
-    <button class="brutalist-fab" @click="openWizard">
-      +
-    </button>
-
-    <!-- Wizard Dialog (Unchanged logic, just simplified template if needed) -->
-    <el-dialog
-      :model-value="wizardVisible"
-      @update:model-value="updateWizardVisible"
-      width="640px"
-      class="brutalist-dialog"
-      :append-to-body="true"
-    >
-      <template #header>
-        <div class="b-dialog-header">{{ t('CRAFT.NEW_TASK') }}</div>
-      </template>
-
-      <div v-if="wizardStep === 1">
-        <div class="b-toolbar">
-          <el-button @click="handleFetchCraftables">{{ t('CRAFT.REFRESH') }}</el-button>
-          <el-input :model-value="craftableQuery" @update:model-value="updateCraftableQuery" :placeholder="t('CRAFT.SEARCH_ITEM')" clearable />
-        </div>
-        
-        <div class="bg-grid">
-          <div
-            v-for="item in filteredCraftables"
-            :key="item.itemId"
-            class="grid-cell"
-            :class="{ selected: selectedCraftable && selectedCraftable.itemId === item.itemId }"
-            @click="selectCraftable(item)"
-          >
-            <ItemIcon 
-              :item-id="item.itemId" 
-              :count="inventoryIndex[item.itemId] !== undefined ? inventoryIndex[item.itemId] : (item.count || 0)" 
-            />
-          </div>
-        </div>
-      </div>
-
-      <div v-else-if="wizardStep === 2">
-        <div class="b-summary">
-          <ItemIcon :item-id="selectedCraftable?.itemId" />
-          <div class="info">
-             <h4>{{ displayItemName(selectedCraftable?.itemId, selectedCraftable?.itemName) }}</h4>
-             <p>{{ selectedCraftable?.itemId }}</p>
-          </div>
-        </div>
-        
-        <div class="b-inputs">
-           <div class="inp-grp">
-             <label>{{ t('CRAFT.MIN_THRESHOLD') }}</label>
-             <el-input-number :model-value="minThreshold" @update:model-value="updateMinThreshold" :min="1" />
-           </div>
-           <div class="inp-grp">
-             <label>{{ t('CRAFT.MAX_THRESHOLD') }}</label>
-             <el-input-number :model-value="maxThreshold" @update:model-value="updateMaxThreshold" :min="1" />
-           </div>
-        </div>
-      </div>
-
-      <template #footer>
-        <div class="b-footer">
-          <el-button @click="closeWizard">{{ t('CRAFT.CANCEL') }}</el-button>
-          <div class="actions">
-            <el-button v-if="wizardStep > 1" @click="prevWizardStep">{{ t('CRAFT.BACK') }}</el-button>
-            <el-button
-              v-if="wizardStep < 2"
-              type="primary"
-              :disabled="wizardStep === 1 && !selectedCraftable"
-              @click="nextWizardStep"
-            >{{ t('CRAFT.NEXT') }}</el-button>
-            <el-button
-              v-if="wizardStep === 2"
-              type="primary"
-              :loading="recipeLoading"
-              @click="handleFinishWizard"
-            >{{ t('CRAFT.CREATE') }}</el-button>
-          </div>
-        </div>
-      </template>
-    </el-dialog>
-
-    <!-- Simplified Detail Dialog -->
+    <!-- Detail Dialog -->
     <el-dialog
       :model-value="detailVisible"
       @update:model-value="updateDetailVisible"
@@ -135,7 +52,7 @@
              <div class="info-center">
                 <p class="mono-id">{{ detailTask.itemId }}</p>
                 <div class="stock-display">
-                  {{ t('CRAFT.STOCK') }}: <span :style="{ color: getStockColor(detailTask) }">{{ formatCompact(inventoryIndex[detailTask.itemId] || 0) }}</span>
+                  {{ t('CRAFT.STOCK') }}: <span :style="{ color: getStockColor(detailTask) }">{{ formatCompact(getStock(detailTask)) }}</span>
                 </div>
              </div>
           </div>
@@ -153,7 +70,7 @@
 
           <div class="dialog-actions">
              <div class="left-actions">
-                <el-button type="danger" plain class="delete-btn" @click="handleDeleteTask(detailTask.itemId)">{{ t('CRAFT.DELETE') }}</el-button>
+                <el-button v-if="detailTask.hasTask" type="danger" plain class="delete-btn" @click="handleDeleteTask(detailTask.itemId)">{{ t('CRAFT.DELETE') }}</el-button>
                 <div class="b-switch-rect" :class="{ active: localForm.active }" @click="localForm.active = !localForm.active">
                    {{ localForm.active ? 'ON' : 'OFF' }}
                 </div>
@@ -177,19 +94,10 @@ const systemStore = useSystemStore()
 const { t } = useI18n()
 
 const {
-  autoCraftTasks,
+  allCraftableCards,
   inventoryIndex,
   itemRates,
-  taskIndex,
-  wizardVisible,
-  wizardStep,
   craftablesLoading,
-  craftableQuery,
-  selectedCraftable,
-  filteredCraftables,
-  minThreshold,
-  maxThreshold,
-  recipeLoading,
   detailVisible,
   detailTask,
   detailMinThreshold,
@@ -200,54 +108,49 @@ const {
 const {
   formatCompact,
   displayItemName,
-  openWizard,
-  closeWizard,
-  selectCraftable,
-  prevWizardStep,
-  nextWizardStep,
-  openTaskDetail,
-  setWizardVisible,
-  setCraftableQuery,
-  setMinThreshold,
-  setMaxThreshold,
+  openCardDetail,
   setDetailVisible,
   setDetailMinThreshold,
   setDetailMaxThreshold,
   saveTaskThresholds: _saveTaskThresholds,
   deleteTask: _deleteTask,
-  handleTaskActiveChange: _handleTaskActiveChange,
-  fetchCraftables: _fetchCraftables,
-  finishWizard: _finishWizard
+  handleTaskActiveChange: _handleTaskActiveChange
 } = systemStore
+
+// Get stock for a card: prefer inventoryIndex (live WebSocket), fallback to craftable count
+function getStock(card) {
+  const liveStock = inventoryIndex.value[card.itemId]
+  if (liveStock !== undefined && liveStock !== null) return liveStock
+  return card.craftableCount || 0
+}
 
 // Helper to determine status type for sorting and color
 // Returns: 'YELLOW', 'RED', 'NONE', 'GRAY'
-function getTaskStatusType(task) {
-  const stock = inventoryIndex.value[task.itemId] || 0
+function getTaskStatusType(card) {
+  // Unconfigured cards are always gray
+  if (!card.hasTask) return 'GRAY'
+
+  const stock = getStock(card)
   
-  if (task.isActive) {
-    if (stock < task.minThreshold) {
-      // Active & Low Stock
-      const rate = itemRates.value[task.itemId] || 0
+  if (card.isActive) {
+    if (stock < card.minThreshold) {
+      const rate = itemRates.value[card.itemId] || 0
       if (rate > 0) return 'YELLOW' // Crafting
       return 'RED' // Waiting / No Rate
     }
     return 'NONE' // Active but Good Stock
   } else {
-    // Inactive - User preference: "If replenish setting is not even on, it should show gray."
-    // And "Red is requested... if not open replenish setting... show gray".
-    // So Inactive is ALWAYS Gray.
     return 'GRAY'
   }
 }
 
-function shouldShowTriangle(task) {
-  const type = getTaskStatusType(task)
+function shouldShowTriangle(card) {
+  const type = getTaskStatusType(card)
   return type !== 'NONE'
 }
 
-function getStatusColor(task) {
-  const type = getTaskStatusType(task)
+function getStatusColor(card) {
+  const type = getTaskStatusType(card)
   switch (type) {
     case 'YELLOW': return '#e6a23c'
     case 'RED': return '#f56c6c'
@@ -256,51 +159,40 @@ function getStatusColor(task) {
   }
 }
 
-// Sort tasks based on status priority
-const sortedAutoCraftTasks = computed(() => {
-  const tasks = [...autoCraftTasks.value]
+// Sort cards based on status priority
+const sortedCards = computed(() => {
+  const cards = [...allCraftableCards.value]
   // Priority: Yellow(0) -> Red(1) -> None(2) -> Gray(3)
   const priority = { 'YELLOW': 0, 'RED': 1, 'NONE': 2, 'GRAY': 3 }
   
-  return tasks.sort((a, b) => {
+  return cards.sort((a, b) => {
     const typeA = getTaskStatusType(a)
     const typeB = getTaskStatusType(b)
     if (priority[typeA] !== priority[typeB]) {
       return priority[typeA] - priority[typeB]
     }
-    // Secondary sort by itemId
+    // Secondary: tasks first, then non-tasks
+    if (a.hasTask !== b.hasTask) return a.hasTask ? -1 : 1
+    // Tertiary sort by itemId
     return (a.itemId || '').localeCompare(b.itemId || '')
   })
 })
-// Keeping getStockColor for detail dialog reuse or refactoring it there
+
 function getStockColor(task) {
-   const stock = inventoryIndex.value[task.itemId] || 0
-   if (stock < task.minThreshold) return 'var(--secondary-color)'
-   if (stock > task.maxThreshold) return 'var(--accent-color)'
+   const stock = getStock(task)
+   if (task.hasTask && stock < task.minThreshold) return 'var(--secondary-color)'
+   if (task.hasTask && stock > task.maxThreshold) return 'var(--accent-color)'
    return 'var(--text-color)'
 }
 
-async function handleFetchCraftables() {
-  try { await _fetchCraftables() } catch (err) { ElMessage.error(err.message) }
+function handleCardClick(card) {
+  openCardDetail(card)
 }
-async function handleFinishWizard() {
-  try { await _finishWizard() } catch (err) { ElMessage.error(err.message) }
-}
-async function handleSaveTaskThresholds() {
-  try { await _saveTaskThresholds(); ElMessage.success('UPDATED') } catch (err) { ElMessage.error(err.message) }
-}
+
 async function handleDeleteTask(itemId) {
   try { await _deleteTask(itemId); ElMessage.success('DELETED'); setDetailVisible(false) } catch (err) { ElMessage.error(err.message) }
 }
-async function onActiveChange(task, value) {
-  try { await _handleTaskActiveChange(task, value) } catch (err) { ElMessage.error(err.message) }
-}
 
-// Proxies
-const updateWizardVisible = (v) => setWizardVisible(v)
-const updateCraftableQuery = (v) => setCraftableQuery(v)
-const updateMinThreshold = (v) => setMinThreshold(v)
-const updateMaxThreshold = (v) => setMaxThreshold(v)
 const localForm = ref({
   min: 1,
   max: 1,
@@ -324,7 +216,7 @@ async function handleSaveLocal() {
     setDetailMinThreshold(localForm.value.min)
     setDetailMaxThreshold(localForm.value.max)
     
-    // 2. Save thresholds
+    // 2. Save thresholds (will also create task if new)
     await _saveTaskThresholds()
     
     // 3. Update active state if changed
@@ -332,7 +224,7 @@ async function handleSaveLocal() {
       await _handleTaskActiveChange(detailTask.value, localForm.value.active)
     }
     
-    ElMessage.success(t('CRAFT.SAVE') + ' ' + 'OK') // detailed message if needed
+    ElMessage.success(t('CRAFT.SAVE') + ' OK')
     setDetailVisible(false)
   } catch (err) {
     ElMessage.error(err.message)
@@ -349,8 +241,23 @@ const updateDetailVisible = (v) => setDetailVisible(v)
 
 .task-grid-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 10px;
+}
+
+/* Responsive card sizing */
+@media (min-width: 768px) {
+  .task-grid-container {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 12px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .task-grid-container {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 15px;
+  }
 }
 
 .task-card {
@@ -360,20 +267,27 @@ const updateDetailVisible = (v) => setDetailVisible(v)
   flex-direction: column;
   cursor: pointer;
   transition: all 0.1s;
-  box-shadow: 4px 4px 0 var(--border-color);
-  aspect-ratio: 1; /* Make the whole card square */
-  overflow: hidden; /* Clip the corner triangle */
+  box-shadow: 3px 3px 0 var(--border-color);
+  aspect-ratio: 1;
+  overflow: hidden;
   
   &:hover {
-    transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0 var(--border-color);
+    transform: translate(1.5px, 1.5px);
+    box-shadow: 1.5px 1.5px 0 var(--border-color);
   }
   
   &:active {
-    transform: translate(4px, 4px);
+    transform: translate(3px, 3px);
     box-shadow: 0 0 0 var(--border-color);
   }
 
+  &.dimmed {
+    opacity: 0.55;
+    
+    &:hover {
+      opacity: 0.8;
+    }
+  }
 }
 
 .card-content {
@@ -386,73 +300,78 @@ const updateDetailVisible = (v) => setDetailVisible(v)
 }
 
 .task-icon {
-  width: 65%;
-  height: 65%;
+  width: 60%;
+  height: 60%;
 }
 
 .status-triangle {
   position: absolute;
-  top: -18px;
-  right: -18px;
-  width: 36px;
-  height: 36px;
+  top: -16px;
+  right: -16px;
+  width: 32px;
+  height: 32px;
   transform: rotate(45deg);
-  border-bottom: 2px solid #000; /* Crisp diagonal border */
+  border-bottom: 2px solid #000;
   box-shadow: -1px 1px 0 rgba(0,0,0,0.1);
-  z-index: 1; /* Ensure it sits below text but above card bg */
+  z-index: 1;
 }
 
 .overlay-count {
   position: absolute;
-  bottom: 8px;
+  bottom: 4px;
   right: 3px;
   font-family: var(--font-nums);
-  font-size: 1.4rem;
-  color: #ffffff; /* White text */
+  font-size: 1.1rem;
+  color: #ffffff;
   text-align: right;
   z-index: 2;
   pointer-events: none;
   line-height: 1;
-  /* Brown stroke using text-shadow - Thickened */
   text-shadow: 
-    -2.5px -2.5px 0 #5d4037,  
-     2.5px -2.5px 0 #5d4037,
-    -2.5px  2.5px 0 #5d4037,
-     2.5px  2.5px 0 #5d4037,
-    -2.5px 0 0 #5d4037,
-     2.5px 0 0 #5d4037,
-     0 -2.5px 0 #5d4037,
-     0 2.5px 0 #5d4037;
+    -2px -2px 0 #5d4037,  
+     2px -2px 0 #5d4037,
+    -2px  2px 0 #5d4037,
+     2px  2px 0 #5d4037,
+    -2px 0 0 #5d4037,
+     2px 0 0 #5d4037,
+     0 -2px 0 #5d4037,
+     0 2px 0 #5d4037;
 }
 
-/* FAB */
-.brutalist-fab {
-  position: fixed;
-  right: 40px;
-  bottom: 40px;
-  width: 60px;
-  height: 60px;
-  background: var(--primary-color);
-  color: #000;
-  border: 3px solid var(--border-color);
-  font-size: 2rem;
-  font-weight: 900;
-  cursor: pointer;
-  box-shadow: 6px 6px 0 rgba(0,0,0,0.2);
-  transition: all 0.2s;
+@media (max-width: 767px) {
+  .overlay-count {
+    font-size: 0.9rem;
+  }
+  .status-triangle {
+    top: -14px;
+    right: -14px;
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Empty state */
+.brutalist-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  color: #888;
   
-  &:hover {
-    transform: translate(3px, 3px);
-    box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
   }
-
-  &:active {
-    transform: translate(6px, 6px);
-    box-shadow: 0 0 0 rgba(0,0,0,0.2);
+  
+  p {
+    font-weight: bold;
+    font-size: 1rem;
   }
 }
 
-/* Detail simplified */
+/* Detail Dialog */
 .b-summary.vertical {
   flex-direction: column;
   text-align: center;
@@ -483,7 +402,7 @@ const updateDetailVisible = (v) => setDetailVisible(v)
   justify-content: space-between;
   align-items: center;
   margin-top: 10px;
-  border-top: 2px dashed var(--secondary-color); /* Changed to dashed and possibly yellow if secondary is yellow, or explicit color */
+  border-top: 2px dashed var(--secondary-color);
   padding-top: 10px;
   
   .left-actions {
@@ -515,81 +434,14 @@ const updateDetailVisible = (v) => setDetailVisible(v)
   background-color: var(--danger-color, #f56c6c) !important;
   color: white !important;
   font-weight: bold;
-  border: 2px solid var(--border-color) !important; /* 2px Black border to match ON button */
+  border: 2px solid var(--border-color) !important;
 }
 
 .b-summary { display: flex; gap: 15px; align-items: center; background: var(--bg-color); border: 2px solid var(--border-color); padding: 10px; margin-bottom: 10px; }
 
-/* Wizard dialog styles */
-.b-toolbar {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 15px;
-  
-  .el-input { flex: 1; }
-}
-
-.bg-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-  gap: 4px;
-  max-height: 40vh;
-  overflow-y: auto;
-  padding: 2px; /* Creates space for edge cell outlines */
-  background: #cbccd4; /* Gap color = inner grid lines */
-  border: 2px solid #f2f2f2; /* Outer edge border */
-}
-
-.bg-grid .grid-cell {
-  aspect-ratio: 1;
-  background: #adb0c4;
-  border: none;
-  box-shadow: inset 0 2px 0 #9a9fb4; /* Top shadow for 3D depth */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.05s;
-  padding: 2px;
-  
-  &:hover {
-    background: #a6bedc;
-    outline: 2px solid #daffff;
-    z-index: 1;
-  }
-  
-  &.selected {
-    background: #a6bedc;
-    outline: 2px solid #daffff;
-    z-index: 1;
-  }
-}
-
-.b-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  
-  .actions {
-    display: flex;
-    gap: 10px;
-  }
-}
-
-.b-inputs {
-  display: flex;
-  gap: 20px;
-  
-  .inp-grp {
-    flex: 1;
-    label { display: block; font-weight: bold; margin-bottom: 5px; }
-  }
-}
-
 .centered-header {
   text-align: center;
-  border-bottom: 2px dashed #e6a23c !important; /* Match bottom separator exactly: 2px dashed yellow */
+  border-bottom: 2px dashed #e6a23c !important;
 }
 
 /* Equal height and consistent style for action buttons */
@@ -601,15 +453,14 @@ const updateDetailVisible = (v) => setDetailVisible(v)
     justify-content: center;
     box-sizing: border-box;
     vertical-align: middle;
-    border: 2px solid var(--border-color) !important; /* Unified 2px black border */
+    border: 2px solid var(--border-color) !important;
     font-weight: bold;
   }
   
-  /* ON button in dialog: shadow + press animation */
   .b-switch-rect {
     margin-left: 0;
     padding: 0 15px;
-    min-width: 55px; /* Prevent size change between ON/OFF */
+    min-width: 55px;
     box-shadow: 4px 4px 0 var(--border-color);
     
     &:hover {
@@ -622,7 +473,6 @@ const updateDetailVisible = (v) => setDetailVisible(v)
     }
   }
   
-  /* Override Save button to match border thickness */
   .el-button--primary {
     border: 2px solid var(--border-color) !important;
   }
@@ -665,7 +515,7 @@ const updateDetailVisible = (v) => setDetailVisible(v)
   padding: 20px !important;
 }
 
-/* HIde close button for detail dialog */
+/* Hide close button for detail dialog */
 .small-dialog .el-dialog__headerbtn {
   display: none !important;
 }

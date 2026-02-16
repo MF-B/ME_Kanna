@@ -191,6 +191,52 @@ export const useSystemStore = defineStore('system', () => {
     return index
   })
 
+  // Craftable stock counts from the craftables API (fallback for items not in inventoryIndex)
+  const craftableCountIndex = computed(() => {
+    const idx = {}
+    craftables.value.forEach((c) => {
+      if (c.itemId) idx[c.itemId] = c.count || 0
+    })
+    return idx
+  })
+
+  // Merged list: all craftables + any tasks whose itemId isn't in craftables
+  const allCraftableCards = computed(() => {
+    const idx = taskIndex.value
+    const cCounts = craftableCountIndex.value
+    const seen = new Set()
+    const cards = []
+
+    // 1. Walk craftables – attach task data when present
+    craftables.value.forEach((c) => {
+      seen.add(c.itemId)
+      const task = idx[c.itemId]
+      if (task) {
+        cards.push({ ...task, hasTask: true, craftableCount: c.count || 0 })
+      } else {
+        cards.push({
+          itemId: c.itemId,
+          itemName: c.itemName || c.itemId,
+          minThreshold: 0,
+          maxThreshold: 0,
+          isActive: false,
+          recipeSnapshot: null,
+          hasTask: false,
+          craftableCount: c.count || 0
+        })
+      }
+    })
+
+    // 2. Tasks whose itemId is NOT in craftables (e.g. removed from AE2)
+    autoCraftTasks.value.forEach((task) => {
+      if (!seen.has(task.itemId)) {
+        cards.push({ ...task, hasTask: true, craftableCount: cCounts[task.itemId] || 0 })
+      }
+    })
+
+    return cards
+  })
+
   const energyPercent = computed(() => {
     if (!systemStatus.value.energyMax) return 0
     const p = (systemStatus.value.energyStored / systemStatus.value.energyMax) * 100
@@ -417,6 +463,27 @@ export const useSystemStore = defineStore('system', () => {
     detailVisible.value = true
   }
 
+  // Open detail for any card (existing task or unconfigured craftable)
+  function openCardDetail(card) {
+    if (card.hasTask) {
+      openTaskDetail(card)
+    } else {
+      // Unconfigured craftable – use defaults
+      detailTask.value = {
+        itemId: card.itemId,
+        itemName: card.itemName || card.itemId,
+        minThreshold: defaultMinThreshold,
+        maxThreshold: defaultMaxThreshold,
+        isActive: false,
+        recipeSnapshot: null,
+        hasTask: false
+      }
+      detailMinThreshold.value = defaultMinThreshold
+      detailMaxThreshold.value = defaultMaxThreshold
+      detailVisible.value = true
+    }
+  }
+
   async function saveTaskThresholds() {
     if (!detailTask.value) return
     if (detailMinThreshold.value <= 0 || detailMaxThreshold.value < detailMinThreshold.value) {
@@ -427,13 +494,21 @@ export const useSystemStore = defineStore('system', () => {
     const abortController = new AbortController()
     const timeoutId = setTimeout(() => abortController.abort(), 8000)
     try {
+      // If this is a brand-new (unconfigured) craftable, fetch recipe first
+      let recipe = detailTask.value.recipeSnapshot || null
+      if (!detailTask.value.hasTask && !recipe) {
+        const { res: recipeRes, data: recipeData } = await autoCraftApi.fetchRecipe({ itemId: detailTask.value.itemId })
+        if (!recipeRes.ok) throw new Error(`获取配方失败: HTTP ${recipeRes.status}`)
+        recipe = recipeData
+      }
+
       const payload = {
         itemId: detailTask.value.itemId,
         itemName: detailTask.value.itemName,
         minThreshold: detailMinThreshold.value,
         maxThreshold: detailMaxThreshold.value,
         isActive: !!detailTask.value.isActive,
-        recipeSnapshot: detailTask.value.recipeSnapshot || null
+        recipeSnapshot: recipe
       }
 
       const { res, data: savedTask } = await autoCraftApi.createTask(payload, {
@@ -452,7 +527,8 @@ export const useSystemStore = defineStore('system', () => {
           minThreshold: savedTask.minThreshold,
           maxThreshold: savedTask.maxThreshold,
           isActive: !!savedTask.isActive,
-          recipeSnapshot: savedTask.recipeSnapshot || detailTask.value.recipeSnapshot
+          recipeSnapshot: savedTask.recipeSnapshot || recipe,
+          hasTask: true
         })
       }
 
@@ -533,6 +609,7 @@ export const useSystemStore = defineStore('system', () => {
     inventoryIndex,
     itemRates,
     taskIndex,
+    allCraftableCards,
     energyPercent,
     energyColor,
     storagePercent,
@@ -565,6 +642,7 @@ export const useSystemStore = defineStore('system', () => {
     nextWizardStep,
     finishWizard,
     openTaskDetail,
+    openCardDetail,
     saveTaskThresholds,
     deleteTask,
     handleTaskActiveChange,
