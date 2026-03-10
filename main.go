@@ -1,9 +1,9 @@
 package main
 
 import (
+	"ME_Kanna/internal/api" // 引入 api 包
+	"ME_Kanna/internal/service"
 	"log"
-	"mineCCT/internal/api" // 引入 api 包
-	"mineCCT/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,12 +1,12 @@
 package api
 
 import (
+	"ME_Kanna/internal/model"
+	"ME_Kanna/internal/service"
+	"ME_Kanna/internal/store"
 	"encoding/json"
 	"fmt"
 	"log"
-	"mineCCT/internal/model"
-	"mineCCT/internal/service"
-	"mineCCT/internal/store"
 	"net/http"
 	"time"
 

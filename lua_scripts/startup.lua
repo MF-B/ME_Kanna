@@ -1,4 +1,4 @@
--- ================= MineCCT Bootloader =================
+-- ================= ME_Kanna Bootloader =================
 local HOST = "http://127.0.0.1:8080"
 local TARGET = "main.lua"
 local FILES = {
@@ -45,4 +45,4 @@ end
 
 package.path = "/lib/?.lua;" .. package.path
 local bootloader = require("bootloader")
-bootloader.boot(TARGET, FILES, "MineCCT Bootloader")
+bootloader.boot(TARGET, FILES, "ME_Kanna Bootloader")

@@ -44,7 +44,7 @@ end
 local function boot(target, files, title)
     term.clear()
     term.setCursorPos(1, 1)
-    print("=== " .. (title or "MineCCT Bootloader") .. " ===")
+    print("=== " .. (title or "ME_Kanna Bootloader") .. " ===")
 
     if fs.exists(target) then
         updateCode(HOST, files)

@@ -1,12 +1,12 @@
 package service
 
 import (
+	"ME_Kanna/internal/config"
 	"archive/zip"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"mineCCT/internal/config"
 	"os"
 	"os/exec"
 	"path/filepath"

@@ -10,7 +10,7 @@
 
 ## 前端
 ```bash
-cd mineCCT-web
+cd web
 npm install
 npm run dev
 ```

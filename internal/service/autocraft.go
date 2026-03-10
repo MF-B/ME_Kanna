@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"mineCCT/internal/model"
-	"mineCCT/internal/store"
+	"ME_Kanna/internal/model"
+	"ME_Kanna/internal/store"
 )
 
 var autoCraftState = struct {

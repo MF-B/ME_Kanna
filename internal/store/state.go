@@ -1,7 +1,7 @@
 package store
 
 import (
-	"mineCCT/internal/model"
+	"ME_Kanna/internal/model"
 	"sync"
 
 	"github.com/gorilla/websocket"

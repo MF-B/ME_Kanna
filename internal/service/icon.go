@@ -1,8 +1,8 @@
 package service
 
 import (
+	"ME_Kanna/internal/config"
 	"fmt"
-	"mineCCT/internal/config"
 	"os"
 	"path/filepath"
 	"strings"

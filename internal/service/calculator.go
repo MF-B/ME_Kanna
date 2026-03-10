@@ -1,10 +1,10 @@
 package service
 
 import (
+	"ME_Kanna/internal/config"
+	"ME_Kanna/internal/model"
+	"ME_Kanna/internal/store"
 	"log"
-	"mineCCT/internal/config"
-	"mineCCT/internal/model"
-	"mineCCT/internal/store"
 	"strings"
 	"time"
 

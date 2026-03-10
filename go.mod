@@ -1,4 +1,4 @@
-module mineCCT
+module ME_Kanna
 
 go 1.25.7
 

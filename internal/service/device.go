@@ -1,8 +1,8 @@
 package service
 
 import (
+	"ME_Kanna/internal/store"
 	"log"
-	"mineCCT/internal/store"
 )
 
 // RegisterDevice 处理设备上线逻辑：保存连接、识别主设备

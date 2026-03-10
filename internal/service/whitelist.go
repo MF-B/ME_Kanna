@@ -10,8 +10,8 @@ import (
 	"strings"
 	"sync"
 
-	"mineCCT/internal/config"
-	"mineCCT/internal/store"
+	"ME_Kanna/internal/config"
+	"ME_Kanna/internal/store"
 )
 
 type whitelistFile struct {
