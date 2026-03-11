@@ -1,85 +1,85 @@
 <template>
-  <section class="panel-section">
-    <el-row :gutter="20">
-      <el-col :xs="24" :md="12" :lg="10">
-        <div class="mc-panel overview-card">
-          <div class="ae2-header-bar">
-            <div class="header-title">能量储备</div>
-            <div class="header-tag">{{ Math.floor(energyPercent) }}%</div>
+  <div class="system-overview">
+    <el-row :gutter="40">
+      <el-col :xs="24" :md="12">
+        <BrutalistCard title="ENERGY.CORE" :delay="0.2">
+          <div class="big-stat">
+            <span class="value">{{ Math.floor(energyPercent) }}</span>
+            <span class="unit">%</span>
           </div>
-
-          <div class="overview-body">
-            <el-progress
-              :percentage="energyPercent"
-              :stroke-width="14"
-              :color="energyColor"
-              :show-text="false"
-            />
-
-            <div class="energy-meta">
-              <div class="energy-value">
-                {{ formatCompact(systemStatus.energyStored) }} / {{ formatCompact(systemStatus.energyMax) }} AE
-              </div>
+          
+          <div class="brutalist-progress">
+            <div class="bar" :style="{ width: energyPercent + '%', background: energyColor }"></div>
+          </div>
+          
+          <div class="stat-row">
+            <div class="stat-item">
+              <span class="label">STORED</span>
+              <span class="val">{{ formatCompact(systemStatus.energyStored) }} AE</span>
             </div>
-
-            <div class="stats-grid">
-              <div class="energy-stat">
-                <div class="label">输入</div>
-                <div class="value">{{ formatRate(systemStatus.averageEnergyInput) }}</div>
-              </div>
-              <div class="energy-stat">
-                <div class="label">消耗</div>
-                <div class="value">{{ formatRate(systemStatus.energyUsage) }}</div>
-              </div>
-              <div class="energy-stat">
-                <div class="label">变化</div>
-                <div class="value" :class="netRateClass">{{ formatRate(systemStatus.netEnergyRate, true) }}</div>
-              </div>
+            <div class="stat-item right">
+              <span class="label">MAX</span>
+              <span class="val">{{ formatCompact(systemStatus.energyMax) }} AE</span>
             </div>
           </div>
-        </div>
+
+          <div class="grid-stats">
+            <div class="g-stat">
+              <span class="lbl">IN</span>
+              <span class="num">{{ formatRate(systemStatus.averageEnergyInput) }}</span>
+            </div>
+            <div class="g-stat">
+              <span class="lbl">OUT</span>
+              <span class="num">{{ formatRate(systemStatus.energyUsage) }}</span>
+            </div>
+            <div class="g-stat">
+              <span class="lbl">NET</span>
+              <span class="num" :class="netRateClass">{{ formatRate(systemStatus.netEnergyRate, true) }}</span>
+            </div>
+          </div>
+        </BrutalistCard>
       </el-col>
 
-      <el-col :xs="24" :md="12" :lg="14">
-        <div class="mc-panel overview-card">
-          <div class="ae2-header-bar">
-            <div class="header-title">存储总览</div>
-            <div class="header-tag">{{ Math.floor(storagePercent) }}%</div>
+      <el-col :xs="24" :md="12">
+        <BrutalistCard title="STORAGE.MATRIX" :delay="0.4">
+          <div class="big-stat">
+            <span class="value">{{ Math.floor(storagePercent) }}</span>
+            <span class="unit">%</span>
+          </div>
+          
+          <div class="multi-progress">
+             <div class="seg internal" :style="{ width: storageInternalRatio + '%' }">
+               <div class="fill" :style="{ width: storageInternalUsage + '%' }"></div>
+             </div>
+             <div class="seg external" :style="{ width: storageExternalRatio + '%' }">
+               <div class="fill" :style="{ width: storageExternalUsage + '%' }"></div>
+             </div>
           </div>
 
-          <div class="overview-body">
-            <div class="storage-split mc-slot" role="img">
-              <div class="storage-segment internal" :style="{ width: `${storageInternalRatio}%` }">
-                <div class="storage-fill" :style="{ width: `${storageInternalUsage}%`, background: '#3dd6a5' }"></div>
-              </div>
-              <div class="storage-segment external" :style="{ width: `${storageExternalRatio}%` }">
-                <div class="storage-fill" :style="{ width: `${storageExternalUsage}%`, background: '#5d8aff' }"></div>
-              </div>
-            </div>
-
-            <div class="storage-legend">
-              <div class="legend-item"><span class="swatch" style="background:#3dd6a5"></span> 内部</div>
-              <div class="legend-item"><span class="swatch" style="background:#5d8aff"></span> 外部</div>
-            </div>
-
-            <div class="storage-stats-grid">
-              <div class="mc-slot storage-block">
-                <div class="block-title">物品存储</div>
-                <div class="block-row">{{ formatCompact(systemStatus.storage.itemUsed) }} / {{ formatCompact(systemStatus.storage.itemTotal) }}</div>
-              </div>
-              <div class="mc-slot storage-block">
-                <div class="block-title">流体存储</div>
-                <div class="block-row">{{ formatCompact(systemStatus.storage.fluidUsed) }} / {{ formatCompact(systemStatus.storage.fluidTotal) }}</div>
-              </div>
-            </div>
+          <div class="legend">
+             <span class="dot int"></span> INTERNAL
+             <span class="dot ext"></span> EXTERNAL
           </div>
-        </div>
+
+          <div class="storage-details">
+             <div class="detail-box">
+                <h4>ITEM</h4>
+                <p>{{ formatCompact(systemStatus.storage.itemUsed) }} / {{ formatCompact(systemStatus.storage.itemTotal) }}</p>
+             </div>
+             <div class="detail-box">
+                <h4>FLUID</h4>
+                <p>{{ formatCompact(systemStatus.storage.fluidUsed) }} / {{ formatCompact(systemStatus.storage.fluidTotal) }}</p>
+             </div>
+          </div>
+        </BrutalistCard>
       </el-col>
     </el-row>
-  </section>
+  </div>
 </template>
 
 <script setup>
+import BrutalistCard from '../BrutalistCard.vue'
+
 defineProps({
   systemStatus: { type: Object, required: true },
   energyPercent: { type: Number, required: true },
@@ -98,118 +98,104 @@ defineProps({
 })
 </script>
 
-<style scoped>
-.overview-card {
-  margin-bottom: 20px;
+<style scoped lang="scss">
+.big-stat {
+  font-size: 4rem;
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 1rem;
+  
+  .unit {
+    font-size: 1.5rem;
+    color: #666;
+    margin-left: 0.5rem;
+  }
 }
 
-.overview-body {
-  padding: 15px;
+.brutalist-progress {
+  height: 24px;
+  background: #333;
+  border: 2px solid #fff;
+  margin-bottom: 1rem;
+  position: relative;
+  
+  .bar {
+    height: 100%;
+    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+  }
 }
 
-.header-tag {
-  background: #aaaaaa;
-  border: 2px solid var(--ae2-border-dark);
-  box-shadow: inset 1px 1px 0px #ffffff;
-  padding: 2px 8px;
-  font-size: 0.9rem;
-  color: #333;
-  font-weight: bold;
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  font-family: monospace;
+  
+  .label { color: #888; display: block; font-size: 0.8rem; }
+  .val { font-weight: bold; font-size: 1.1rem; }
+  .right { text-align: right; }
 }
 
-.energy-meta {
-  margin: 10px 0;
-  text-align: center;
-}
-
-.energy-value {
-  font-size: 1rem;
-  font-weight: bold;
-  color: var(--ae2-text);
-}
-
-.stats-grid {
+.grid-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-  margin-top: 15px;
+  
+  .g-stat {
+    border: 2px solid #333;
+    padding: 10px;
+    text-align: center;
+    background: #000;
+    
+    .lbl { display: block; font-size: 0.7rem; color: #666; margin-bottom: 5px; }
+    .num { display: block; font-weight: bold; font-size: 1rem; }
+  }
 }
 
-.energy-stat {
-  flex-direction: column;
-  padding: 8px !important;
+.multi-progress {
+  display: flex;
+  height: 24px;
+  border: 2px solid #fff;
+  margin-bottom: 1rem;
+  background: #333;
+  
+  .seg { height: 100%; position: relative; }
+  .fill { height: 100%; transition: width 0.5s; }
+  
+  .internal .fill { background: var(--accent-color, #00E676); }
+  .external .fill { background: var(--secondary-color, #FF5722); }
 }
 
-.energy-stat .label {
-  color: #bbbbbb !important;
-  font-size: 0.75rem;
-  margin-bottom: 4px;
-}
-
-.energy-stat .value {
-  font-size: 0.9rem;
+.legend {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 1.5rem;
+  font-size: 0.8rem;
   font-weight: bold;
+  
+  .dot {
+    width: 12px;
+    height: 12px;
+    display: inline-block;
+    margin-right: 5px;
+    border: 1px solid #fff;
+  }
+  .int { background: var(--accent-color); }
+  .ext { background: var(--secondary-color); }
 }
 
-.storage-split {
-  display: flex;
-  overflow: hidden;
-  margin-bottom: 10px;
-  padding: 0 !important;
-}
-
-.storage-segment {
-  height: 100%;
-  position: relative;
-}
-
-.storage-fill {
-  height: 100%;
-}
-
-.storage-legend {
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-  margin-bottom: 15px;
-  font-size: 0.85rem;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.swatch {
-  width: 10px;
-  height: 10px;
-  border: 1px solid var(--ae2-border-dark);
-}
-
-.storage-stats-grid {
+.storage-details {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.storage-block {
-  flex-direction: column;
-  padding: 10px !important;
-  text-align: center;
-}
-
-.block-title {
-  font-size: 0.8rem;
-  color: #ccc;
-  margin-bottom: 4px;
-  text-shadow: 1px 1px 0px #373737;
-}
-
-.block-row {
-  font-size: 0.95rem;
-  font-weight: bold;
-  color: white;
-  text-shadow: 1px 1px 0px #373737;
+  gap: 20px;
+  
+  .detail-box {
+    border: 2px solid #fff;
+    padding: 10px;
+    background: #000;
+    
+    h4 { margin: 0 0 5px 0; font-size: 0.8rem; color: #888; }
+    p { margin: 0; font-weight: bold; }
+  }
 }
 </style>

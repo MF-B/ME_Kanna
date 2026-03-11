@@ -1,30 +1,26 @@
 <template>
-  <section class="panel-section">
-    <el-row :gutter="20">
-      <el-col
+  <div class="factory-panel-container">
+    <div class="factory-grid">
+      <div
         v-for="factory in factories"
         :key="factory.id"
-        :xs="24" :sm="12" :md="8" :lg="6"
-        style="margin-bottom: 20px;"
+        class="factory-cell"
       >
         <FactoryCard
           :factory="factory"
           @command="(payload) => $emit('command', payload)"
         />
-      </el-col>
-    </el-row>
+      </div>
+    </div>
 
-    <el-empty
-      v-if="factories.length === 0 && connected"
-      description="等待 AE 网络数据上报..."
-    />
+    <div v-if="factories.length === 0 && connected" class="empty-msg">
+      WAITING FOR DATA LINK...
+    </div>
 
-    <el-empty
-      v-if="!connected"
-      description="与 Go 后端断开连接，正在重试..."
-      :image-size="100"
-    />
-  </section>
+    <div v-if="!connected" class="empty-msg offline">
+      SYSTEM OFFLINE - RETRYING...
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -37,3 +33,24 @@ defineProps({
 
 defineEmits(['command'])
 </script>
+
+<style scoped>
+.factory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  padding: 10px;
+}
+
+.empty-msg {
+  text-align: center;
+  padding: 50px;
+  color: #666;
+  font-weight: bold;
+  font-family: monospace;
+}
+
+.offline {
+  color: var(--secondary-color, #FF5722);
+}
+</style>
