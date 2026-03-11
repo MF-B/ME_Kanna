@@ -1,108 +1,99 @@
 <template>
   <section class="panel-section">
-    <div class="panel-title autocraft-title">
-      <span>自动合成任务</span>
-      <span class="panel-subtitle">实时监控库存阈值并级联合成</span>
-    </div>
-
-    <el-row :gutter="20">
-      <el-col
+    <div class="task-list-container">
+      <div
         v-for="task in autoCraftTasks"
         :key="task.itemId"
-        :xs="24" :sm="12" :md="8" :lg="6"
-        style="margin-bottom: 20px;"
+        class="ae2-slot-row task-item"
+        @click="openTaskDetail(task)"
       >
-        <el-card class="autocraft-card" shadow="hover" @click="openTaskDetail(task)">
-          <div class="autocraft-card-header">
-            <ItemIcon :item-id="task.itemId" />
-            <div class="autocraft-card-title">
-              <div class="name">{{ displayItemName(task.itemId, task.itemName) }}</div>
-              <div class="id">{{ task.itemId }}</div>
-            </div>
-            <el-tag :type="task.isActive ? 'success' : 'info'" effect="dark" size="small">
-              {{ task.isActive ? 'ACTIVE' : 'PAUSED' }}
-            </el-tag>
+        <ItemIcon :item-id="task.itemId" />
+        <div class="task-meta">
+          <div class="name">{{ displayItemName(task.itemId, task.itemName) }}</div>
+          <div class="id">{{ task.itemId }}</div>
+        </div>
+        
+        <div class="task-stats-group">
+          <div class="stat-pill">
+            <span class="label">库存</span>
+            <span class="value">{{ formatCompact(inventoryIndex[task.itemId] || 0) }}</span>
           </div>
-          <div class="autocraft-card-body">
-            <div class="autocraft-stat">
-              <span>当前库存</span>
-              <strong>{{ formatCompact(inventoryIndex[task.itemId] || 0) }}</strong>
-            </div>
-            <div class="autocraft-stat">
-              <span>目标阈值</span>
-              <strong>{{ task.minThreshold }} / {{ task.maxThreshold }}</strong>
-            </div>
+          <div class="stat-pill">
+            <span class="label">阈值</span>
+            <span class="value">{{ task.minThreshold }} / {{ task.maxThreshold }}</span>
           </div>
-          <div class="autocraft-card-footer">
-            <el-switch
-              :model-value="task.isActive"
-              inline-prompt
-              active-text="ON"
-              inactive-text="OFF"
-              @change="(value) => onActiveChange(task, value)"
-              @click.stop
-            />
-            <div class="autocraft-actions">
-              <span class="autocraft-footer-hint">点击编辑阈值</span>
-              <el-button link type="danger" @click.stop="handleDeleteTask(task.itemId)">删除</el-button>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+        </div>
+
+        <div class="task-actions" @click.stop>
+          <el-switch
+            :model-value="task.isActive"
+            inline-prompt
+            active-text="ON"
+            inactive-text="OFF"
+            @change="(value) => onActiveChange(task, value)"
+          />
+          <el-button link type="danger" @click="handleDeleteTask(task.itemId)">
+            <el-icon><Delete /></el-icon>
+          </el-button>
+        </div>
+      </div>
+    </div>
 
     <el-empty
       v-if="autoCraftTasks.length === 0"
-      description="还没有自动合成任务，点击右下角 + 创建"
+      description="无活跃合成任务"
     />
 
     <teleport to="body">
-      <el-button class="fab-button" type="primary" @click="openWizard">
+      <el-button class="fab-button ae2-side-button" type="primary" @click="openWizard">
         <span class="fab-icon">+</span>
       </el-button>
     </teleport>
 
+    <!-- 向导弹窗重构 -->
     <el-dialog
       :model-value="wizardVisible"
       @update:model-value="updateWizardVisible"
-      width="780px"
+      width="640px"
       class="autocraft-dialog"
       :append-to-body="true"
       :close-on-click-modal="false"
     >
       <template #header>
         <div class="dialog-header">
-          <div class="dialog-title">自动合成配置向导</div>
-          <div class="dialog-subtitle">为你的工厂建立智能库存阈值</div>
+          <div class="dialog-title">新建合成任务</div>
         </div>
       </template>
 
-      <el-steps :active="wizardStep - 1" finish-status="success" align-center>
-        <el-step title="选择物品" />
-        <el-step title="阈值设置" />
-      </el-steps>
-
       <div class="wizard-body" v-if="wizardStep === 1">
-        <div class="wizard-toolbar">
-          <el-input :model-value="craftableQuery" @update:model-value="updateCraftableQuery" placeholder="搜索可合成物品" clearable />
+        <div class="wizard-toolbar" style="margin-bottom: 15px;">
+          <el-input :model-value="craftableQuery" @update:model-value="updateCraftableQuery" placeholder="搜索物品..." clearable />
           <el-button :loading="craftablesLoading" @click="handleFetchCraftables">刷新</el-button>
         </div>
-        <div class="craftable-list">
-          <el-scrollbar height="280px">
+        
+        <div class="ae2-slot-grid craftable-grid-viewport">
+          <el-tooltip
+            v-for="item in filteredCraftables"
+            :key="item.itemId"
+            effect="dark"
+            popper-class="ae2-tooltip"
+            placement="top"
+          >
+            <template #content>
+              <div class="tooltip-name">{{ displayItemName(item.itemId, item.itemName) }}</div>
+              <div class="tooltip-id">{{ item.itemId }}</div>
+            </template>
             <div
-              v-for="item in filteredCraftables"
-              :key="item.itemId"
-              class="craftable-row"
-              :class="{ selected: selectedCraftable && selectedCraftable.itemId === item.itemId }"
+              class="ae2-slot-cell"
+              :class="{ 'is-selected': selectedCraftable && selectedCraftable.itemId === item.itemId }"
               @click="selectCraftable(item)"
             >
-              <ItemIcon :item-id="item.itemId" />
-              <div class="craftable-meta">
-                <div class="name">{{ displayItemName(item.itemId, item.itemName) }}</div>
-                <div class="id">{{ item.itemId }}</div>
-              </div>
+              <ItemIcon :item-id="item.itemId" :count="inventoryIndex[item.itemId] || 0" />
             </div>
-          </el-scrollbar>
+          </el-tooltip>
+        </div>
+        <div class="selection-info" v-if="selectedCraftable" style="margin-top: 10px;">
+          当前选择: <span class="text-purple">{{ displayItemName(selectedCraftable.itemId, selectedCraftable.itemName) }}</span>
         </div>
       </div>
 
@@ -328,230 +319,91 @@ function updateDetailVisible(value) {
 </script>
 
 <style scoped>
-.autocraft-title {
+.task-list-container {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-}
-
-.panel-subtitle {
-  font-size: 0.85rem;
-  text-transform: none;
-  letter-spacing: 0.5px;
-  color: #7b86a9;
-}
-
-.autocraft-card {
-  background: linear-gradient(140deg, rgba(20, 24, 35, 0.95), rgba(14, 18, 28, 0.85));
-  border: 1px solid rgba(79, 110, 255, 0.25);
-  border-radius: 16px;
-  color: #eef2ff;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
-  cursor: pointer;
-}
-
-.autocraft-card-header {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 12px;
-  align-items: center;
-}
-
-.autocraft-card-title .name {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #f1f5ff;
-}
-
-.autocraft-card-title .id {
-  font-size: 0.75rem;
-  color: #8b93aa;
-}
-
-.autocraft-card-body {
-  margin-top: 14px;
-  display: grid;
   gap: 8px;
 }
 
-.autocraft-stat {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.85rem;
-  color: #c3c9dd;
+.task-item {
+  cursor: pointer;
+  transition: border-color 0.2s;
 }
 
-.autocraft-stat strong {
-  color: #e6ecff;
+.task-item:hover {
+  border-color: #ffffff;
 }
 
-.autocraft-card-footer {
-  margin-top: 16px;
+.task-meta {
+  flex: 1;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+}
+
+.task-meta .name {
+  font-weight: bold;
+  color: var(--ae2-text);
+}
+
+.task-meta .id {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.task-stats-group {
+  display: flex;
+  gap: 15px;
+  margin: 0 20px;
+}
+
+.stat-pill {
+  display: flex;
+  flex-direction: column;
   align-items: center;
 }
 
-.autocraft-footer-hint {
-  font-size: 0.75rem;
-  color: #7f88a6;
+.stat-pill .label {
+  font-size: 0.7rem;
+  color: #777;
+  text-transform: uppercase;
+}
+
+.stat-pill .value {
+  font-weight: bold;
+  color: var(--ae2-purple);
+}
+
+.task-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.craftable-grid-viewport {
+  height: 300px;
+  overflow-y: auto;
+  align-content: flex-start;
+}
+
+.autocraft-title {
+  display: flex;
+  flex-direction: column;
+}
+
+.autocraft-title .name {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.panel-subtitle {
+  font-size: 0.8rem;
+  color: #666;
 }
 
 .fab-button {
   position: fixed;
   right: 36px;
   bottom: 36px;
-  width: 56px;
-  height: 56px;
-  border: none;
-  background: radial-gradient(circle at top, #58f0c2, #1b7f6a);
-  box-shadow: 0 12px 28px rgba(27, 127, 106, 0.4);
-  color: #0d1216;
-  z-index: 10;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.fab-icon {
-  font-size: 2rem;
-  line-height: 1;
-  font-weight: 300;
-  margin-top: -4px;
-}
-
-.fab-button:hover {
-  transform: translateY(-4px) scale(1.05);
-  box-shadow: 0 16px 36px rgba(27, 127, 106, 0.5);
-}
-
-.autocraft-dialog :deep(.el-dialog__body),
-.autocraft-detail-dialog :deep(.el-dialog__body) {
-  padding-top: 14px;
-}
-
-.dialog-header {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.dialog-title {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #e6f6ff;
-}
-
-.dialog-subtitle {
-  font-size: 0.85rem;
-  color: #7c8ab0;
-}
-
-.wizard-body {
-  margin-top: 20px;
-}
-
-.wizard-toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.craftable-list {
-  border: 1px solid rgba(96, 115, 168, 0.25);
-  border-radius: 12px;
-  background: rgba(11, 15, 24, 0.7);
-}
-
-.craftable-row {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 10px 14px;
-  cursor: pointer;
-  border-bottom: 1px solid rgba(96, 115, 168, 0.15);
-}
-
-.craftable-row:last-child {
-  border-bottom: none;
-}
-
-.craftable-row.selected {
-  background: rgba(61, 214, 165, 0.15);
-}
-
-.craftable-meta .name {
-  font-weight: 600;
-  color: #eff3ff;
-}
-
-.craftable-meta .id {
-  font-size: 0.75rem;
-  color: #8b93aa;
-}
-
-.wizard-summary {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  background: rgba(12, 16, 25, 0.7);
-  border-radius: 12px;
-  border: 1px solid rgba(96, 115, 168, 0.3);
-}
-
-.wizard-summary .name {
-  font-weight: 600;
-  color: #f1f5ff;
-}
-
-.wizard-summary .id {
-  font-size: 0.8rem;
-  color: #8b93aa;
-}
-
-.threshold-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-top: 18px;
-}
-
-.threshold-item {
-  padding: 12px 14px;
-  background: rgba(12, 16, 25, 0.7);
-  border-radius: 12px;
-  border: 1px solid rgba(96, 115, 168, 0.3);
-}
-
-.threshold-item .label {
-  font-size: 0.8rem;
-  color: #8b93aa;
-  margin-bottom: 8px;
-}
-
-.threshold-hint {
-  margin-top: 12px;
-  font-size: 0.8rem;
-  color: #7c8ab0;
-}
-
-.tree-panel {
-  margin-top: 16px;
-}
-
-.detail-actions {
-  margin-top: 14px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-@media (max-width: 768px) {
-  .fab-button {
-    right: 18px;
-    bottom: 18px;
-  }
+  z-index: 100;
 }
 </style>

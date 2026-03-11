@@ -1,7 +1,5 @@
 <template>
   <section class="panel-section">
-    <div class="panel-title">工厂产能与库存</div>
-
     <el-row :gutter="20">
       <el-col
         v-for="factory in factories"

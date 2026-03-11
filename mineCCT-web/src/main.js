@@ -2,7 +2,8 @@
 import { createApp } from 'vue'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
-import 'element-plus/theme-chalk/dark/css-vars.css' // 引入暗黑模式变量
+import 'element-plus/theme-chalk/dark/css-vars.css' 
+import './assets/main.css'
 import App from './App.vue'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import { createPinia } from 'pinia'

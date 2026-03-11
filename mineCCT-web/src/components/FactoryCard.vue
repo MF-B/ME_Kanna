@@ -1,11 +1,11 @@
 <template>
   <el-card
-    class="factory-card"
+    class="factory-card factory-card-ae2"
     :class="{ 'is-active': factory.isActive }"
-    shadow="hover"
+    shadow="never"
     @click="openSettings"
   >
-    <div class="card-header">
+    <div class="ae2-header-bar">
       <div class="title-group">
         <div class="title-text">
           <span class="factory-name">{{ factory.name }}</span>
@@ -25,7 +25,7 @@
 
     <div class="card-body">
       <div class="item-list" v-if="visibleItems.length">
-        <div class="item-row" v-for="item in visibleItems" :key="item.itemId">
+        <div class="ae2-slot-row" v-for="item in visibleItems" :key="item.itemId">
           <ItemIcon :item-id="item.itemId" />
           <div class="item-meta">
             <div class="item-id" :title="item.itemId">{{ getItemName(item.itemId) }}</div>
@@ -37,14 +37,13 @@
       </div>
     </div>
 
-    <div class="card-footer">
+    <div class="ae2-footer-bar">
       <span class="control-label">远程控制</span>
       <el-switch
         v-model="localActive"
         inline-prompt
         active-text="ON"
         inactive-text="OFF"
-        style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
         @change="handleSwitchChange"
         @click.stop
         :loading="loading"
@@ -74,7 +73,7 @@
       <div class="settings-title">显示配置 + 拖动排序</div>
       <div class="settings-group">
         <div
-          class="settings-row"
+          class="settings-row ae2-slot-row"
           v-for="(item, index) in localItems"
           :key="item.itemId"
           draggable="true"
