@@ -4,6 +4,12 @@ import (
 	"encoding/json"
 )
 
+type ItemInfo struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Icon string `json:"icon"`
+}
+
 type EnergyStats struct {
 	EnergyStored       float64 `json:"energyStored"`
 	EnergyMax          float64 `json:"energyMax"`

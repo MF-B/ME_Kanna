@@ -3,6 +3,7 @@ package service
 import (
 	"ME_Kanna/internal/model"
 	"ME_Kanna/internal/store"
+	"ME_Kanna/internal/utils"
 	"encoding/json"
 	"log"
 	"strings"
@@ -102,7 +103,7 @@ func BuildRecipeTree(itemID string, depth int) *model.RecipeSnapshot {
 		return nil
 	}
 
-	name, err := GetItemDisplayName(itemID)
+	name, err := utils.GetItemDisplayName(itemID)
 	if err != nil || strings.TrimSpace(name) == "" {
 		name = itemID
 	}

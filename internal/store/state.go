@@ -2,6 +2,7 @@ package store
 
 import (
 	"ME_Kanna/internal/model"
+	"ME_Kanna/internal/utils"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -55,6 +56,9 @@ type StateManager struct {
 
 	// 元数据
 	Meta SystemMeta
+
+	// 全局物品字典(静态)
+	ItemDict map[string]model.ItemInfo
 }
 
 // Global 初始化
@@ -68,4 +72,44 @@ var Global = &StateManager{
 	Meta: SystemMeta{
 		DeviceRoles: make(map[string]string),
 	},
+	ItemDict: make(map[string]model.ItemInfo),
+}
+
+// GetItemInfo 获取物品信息
+func (s *StateManager) GetItemInfo(itemID string) model.ItemInfo {
+	// 读锁
+	s.Mutex.RLock()
+	info, exists := s.ItemDict[itemID]
+	s.Mutex.RUnlock()
+
+	// 命中缓存
+	if exists {
+		return info
+	}
+
+	// 写锁
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
+
+	// 二次验证
+	if info, exists = s.ItemDict[itemID]; exists {
+		return info
+	}
+
+	// TODO: 获取Name和Icon
+	name, err := utils.GetItemDisplayName(itemID)
+	if err != nil {
+		name = itemID
+	}
+	icon := utils.GetIconUrl(itemID)
+
+	newItem := model.ItemInfo{
+		ID:   itemID,
+		Name: name,
+		Icon: icon,
+	}
+
+	s.ItemDict[itemID] = newItem
+
+	return newItem
 }

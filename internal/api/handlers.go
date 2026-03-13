@@ -4,10 +4,12 @@ import (
 	"ME_Kanna/internal/model"
 	"ME_Kanna/internal/service"
 	"ME_Kanna/internal/store"
+	"ME_Kanna/internal/utils"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -159,7 +161,8 @@ func HandleWeb(c *gin.Context) {
 
 func HandleIcon(c *gin.Context) {
 	fullID := c.Param("id")
-	data, err := service.GetIconImage(fullID)
+	iconPath := utils.GetIconUrl(fullID)
+	data, err := os.ReadFile(iconPath)
 	if err != nil {
 		c.Status(404)
 		return
@@ -169,7 +172,7 @@ func HandleIcon(c *gin.Context) {
 
 func HandleItemName(c *gin.Context) {
 	fullID := c.Param("id")
-	name, _ := service.GetItemDisplayName(fullID)
+	name, _ := utils.GetItemDisplayName(fullID)
 	c.JSON(200, gin.H{"id": fullID, "name": name})
 }
 

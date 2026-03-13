@@ -9,6 +9,7 @@ import (
 
 	"ME_Kanna/internal/model"
 	"ME_Kanna/internal/store"
+	"ME_Kanna/internal/utils"
 )
 
 var autoCraftState = struct {
@@ -92,7 +93,7 @@ func GetCraftablesSnapshot() ([]model.CraftableItem, int64) {
 	})
 
 	for index := range items {
-		displayName, err := GetItemDisplayName(items[index].ItemID)
+		displayName, err := utils.GetItemDisplayName(items[index].ItemID)
 		if err == nil && strings.TrimSpace(displayName) != "" && displayName != items[index].ItemID {
 			// 语言文件解析成功且不是 fallback 到 itemID，覆盖
 			items[index].ItemName = displayName
@@ -266,7 +267,7 @@ func normalizeAutoCraftTask(task model.AutoCraftTask) (*model.AutoCraftTask, err
 
 	itemName := strings.TrimSpace(task.ItemName)
 	if itemName == "" {
-		resolvedName, err := GetItemDisplayName(itemID)
+		resolvedName, err := utils.GetItemDisplayName(itemID)
 		if err == nil && strings.TrimSpace(resolvedName) != "" {
 			itemName = resolvedName
 		} else {
