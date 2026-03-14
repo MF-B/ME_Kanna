@@ -332,3 +332,14 @@ func HandleAutoCraftTaskPatch(c *gin.Context) {
 
 	c.JSON(200, task)
 }
+
+// HandleItemInfo 处理前端拉取物品静态信息的请求
+func HandleItemInfo(c *gin.Context) {
+	itemID := c.Param("id")
+
+	// 呼叫大管家，触发缺页中断读取！
+	info := store.Global.GetItemInfo(itemID)
+
+	// 打包返回
+	c.JSON(200, info)
+}

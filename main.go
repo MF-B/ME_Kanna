@@ -25,26 +25,10 @@ func main() {
 		log.Printf("Whitelist init failed: %v", err)
 	}
 
-	// 注册路由 - 全部委托给 api 包处理
-	r.GET("/ws/minecraft", api.HandleMinecraft)
-	r.GET("/ws/web", api.HandleWeb)
-	r.GET("/icon/:id", api.HandleIcon)
-	r.GET("/item-name/:id", api.HandleItemName)
-	r.GET("/config/whitelist", api.HandleConfig)
-	r.POST("/config/whitelist", api.HandleConfigUpdate)
-	r.PUT("/config/whitelist", api.HandleConfigUpdate)
-	r.GET("/autocraft/craftables", api.HandleAutoCraftables)
-	r.GET("/autocraft/recipe", api.HandleAutoCraftRecipe)
-	r.GET("/autocraft/patterns", api.HandlePatterns)
-	r.GET("/autocraft/tasks", api.HandleAutoCraftTasks)
-	r.POST("/autocraft/tasks", api.HandleAutoCraftTasks)
-	r.DELETE("/autocraft/tasks/:itemId", api.HandleAutoCraftTaskDelete)
-	r.PATCH("/autocraft/tasks/:itemId", api.HandleAutoCraftTaskPatch)
-
-	r.Static("/lua", "./lua_scripts")
+	api.RegisterRoutes(r)
 
 	port := ":8080"
-	log.Printf("MineDock 模块化重构版启动! 监听: [::]%s", port)
+	log.Printf("MineDock 启动, 监听: [::]%s", port)
 
 	if err := r.Run("[::]" + port); err != nil {
 		log.Fatalf("启动失败: %v", err)
