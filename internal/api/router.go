@@ -27,4 +27,6 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// 4. 静态资源挂载
 	r.Static("/lua", "./lua_scripts")
+
+	r.Static("/icons", "./.minecraft/icon-exports-x32")
 }

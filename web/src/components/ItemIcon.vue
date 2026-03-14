@@ -1,7 +1,7 @@
 <template>
   <div class="item-icon-container">
     <img 
-      v-if="itemId && !isError"
+      v-if="itemId && iconUrl && !isError"
       :src="iconUrl" 
       :alt="itemId"
       class="item-img"
@@ -19,6 +19,7 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useItemNames } from '../composables/useItemNames'
 
 const props = defineProps({
   itemId: { type: String, required: false },
@@ -26,15 +27,16 @@ const props = defineProps({
 })
 
 const isError = ref(false)
+const { icons: itemIcons, ensureIcon } = useItemNames()
 
-watch(() => props.itemId, () => {
+watch(() => props.itemId, (nextId) => {
   isError.value = false
-})
+  if (nextId) ensureIcon(nextId)
+}, { immediate: true })
 
 const iconUrl = computed(() => {
   if (!props.itemId) return ''
-  const host = window.location.hostname
-  return `http://${host}:8080/icon/${props.itemId}`
+  return itemIcons[props.itemId] || ''
 })
 
 const handleError = () => {

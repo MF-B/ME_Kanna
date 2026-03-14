@@ -3,6 +3,7 @@ package main
 import (
 	"ME_Kanna/internal/api" // 引入 api 包
 	"ME_Kanna/internal/service"
+	"ME_Kanna/internal/utils"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -26,6 +27,7 @@ func main() {
 	}
 
 	api.RegisterRoutes(r)
+	utils.InitIconIndex("./.minecraft/icon-exports-x32")
 
 	port := ":8080"
 	log.Printf("MineDock 启动, 监听: [::]%s", port)

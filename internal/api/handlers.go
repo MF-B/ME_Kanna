@@ -161,7 +161,7 @@ func HandleWeb(c *gin.Context) {
 
 func HandleIcon(c *gin.Context) {
 	fullID := c.Param("id")
-	iconPath := utils.GetIconUrl(fullID)
+	iconPath := utils.GetIconURL(fullID)
 	data, err := os.ReadFile(iconPath)
 	if err != nil {
 		c.Status(404)

@@ -96,12 +96,12 @@ func (s *StateManager) GetItemInfo(itemID string) model.ItemInfo {
 		return info
 	}
 
-	// TODO: 获取Name和Icon
+	// 获取Name和Icon
 	name, err := utils.GetItemDisplayName(itemID)
 	if err != nil {
 		name = itemID
 	}
-	icon := utils.GetIconUrl(itemID)
+	icon := utils.GetIconURL(itemID)
 
 	newItem := model.ItemInfo{
 		ID:   itemID,
