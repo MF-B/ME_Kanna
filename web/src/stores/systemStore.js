@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import * as autoCraftApi from '../api/autocraft'
-import { useItemNames } from '../composables/useItemNames'
+import { useItemInfo } from '../composables/useItemInfo'
 
 export const useSystemStore = defineStore('system', () => {
   const factories = ref([])
@@ -47,7 +47,7 @@ export const useSystemStore = defineStore('system', () => {
   const inventoryIndex = shallowRef({})
   const itemRates = shallowRef({})
 
-  const { names: itemNameMap, ensureName } = useItemNames()
+  const { names: itemNameMap, ensureName } = useItemInfo()
 
   const defaultMinThreshold = 64
   const defaultMaxThreshold = 256
@@ -117,7 +117,7 @@ export const useSystemStore = defineStore('system', () => {
       const list = payload.craftables || []
       craftables.value = list.map((c) => ({
         itemId: c.itemId,
-        itemName: c.itemName || c.itemId,
+        itemName: c.itemId,
         count: c.count || 0
       })).filter((c) => c.itemId)
       craftables.value.forEach((c) => ensureName(c.itemId))
@@ -216,7 +216,7 @@ export const useSystemStore = defineStore('system', () => {
       } else {
         cards.push({
           itemId: c.itemId,
-          itemName: c.itemName || c.itemId,
+          itemName: c.itemId,
           minThreshold: 0,
           maxThreshold: 0,
           isActive: false,
@@ -297,9 +297,10 @@ export const useSystemStore = defineStore('system', () => {
     return 'text-gray'
   })
 
-  function displayItemName(itemId, fallbackName) {
-    if (!itemId) return fallbackName || ''
-    return itemNameMap[itemId] || fallbackName || itemId
+  function displayItemName(itemId) {
+    if (!itemId) return ''
+    ensureName(itemId)
+    return itemNameMap[itemId] || itemId
   }
 
   const filteredCraftables = computed(() => {
@@ -307,7 +308,7 @@ export const useSystemStore = defineStore('system', () => {
     if (!query) return craftables.value
     return craftables.value.filter((craftableItem) => {
       const itemIdKeyword = (craftableItem.itemId || '').toLowerCase()
-      const itemNameKeyword = displayItemName(craftableItem.itemId, craftableItem.itemName).toLowerCase()
+      const itemNameKeyword = displayItemName(craftableItem.itemId).toLowerCase()
       return itemIdKeyword.includes(query) || itemNameKeyword.includes(query)
     })
   })
@@ -329,12 +330,12 @@ export const useSystemStore = defineStore('system', () => {
         }
         return {
           itemId: craftableEntry.itemId,
-          itemName: craftableEntry.itemName || craftableEntry.itemId,
+          itemName: craftableEntry.itemId,
           count: craftableEntry.count || 0
         }
       }).filter((craftableEntry) => craftableEntry.itemId)
 
-      // 在批量预取中已经处理了数据流入，这里不再分散触发 ensureName
+      craftables.value.forEach((craftableEntry) => ensureName(craftableEntry.itemId))
     } catch (err) {
       craftables.value = []
       if (err?.name === 'AbortError') {
@@ -354,7 +355,7 @@ export const useSystemStore = defineStore('system', () => {
       const taskList = Array.isArray(data) ? data : (data.items || [])
       autoCraftTasks.value = taskList.map((entry) => ({
         itemId: entry.itemId,
-        itemName: entry.itemName || entry.itemId,
+        itemName: entry.itemId,
         minThreshold: entry.minThreshold,
         maxThreshold: entry.maxThreshold,
         isActive: !!entry.isActive,
@@ -424,7 +425,7 @@ export const useSystemStore = defineStore('system', () => {
 
       const taskPayload = {
         itemId: main.itemId,
-        itemName: displayItemName(main.itemId, main.itemName),
+        itemName: displayItemName(main.itemId),
         minThreshold: minThreshold.value,
         maxThreshold: maxThreshold.value,
         isActive: false,
@@ -441,7 +442,7 @@ export const useSystemStore = defineStore('system', () => {
       }
       upsertTask({
         itemId: savedTask.itemId,
-        itemName: savedTask.itemName || savedTask.itemId,
+        itemName: savedTask.itemId,
         minThreshold: savedTask.minThreshold,
         maxThreshold: savedTask.maxThreshold,
         isActive: !!savedTask.isActive,
@@ -471,7 +472,7 @@ export const useSystemStore = defineStore('system', () => {
       // Unconfigured craftable – use defaults
       detailTask.value = {
         itemId: card.itemId,
-        itemName: card.itemName || card.itemId,
+        itemName: card.itemId,
         minThreshold: defaultMinThreshold,
         maxThreshold: defaultMaxThreshold,
         isActive: false,
@@ -504,7 +505,7 @@ export const useSystemStore = defineStore('system', () => {
 
       const payload = {
         itemId: detailTask.value.itemId,
-        itemName: detailTask.value.itemName,
+        itemName: displayItemName(detailTask.value.itemId),
         minThreshold: detailMinThreshold.value,
         maxThreshold: detailMaxThreshold.value,
         isActive: !!detailTask.value.isActive,
@@ -523,7 +524,7 @@ export const useSystemStore = defineStore('system', () => {
       if (detailTask.value && savedTask) {
         Object.assign(detailTask.value, {
           itemId: savedTask.itemId,
-          itemName: savedTask.itemName || savedTask.itemId,
+          itemName: savedTask.itemId,
           minThreshold: savedTask.minThreshold,
           maxThreshold: savedTask.maxThreshold,
           isActive: !!savedTask.isActive,
@@ -576,7 +577,7 @@ export const useSystemStore = defineStore('system', () => {
       }
       upsertTask({
         itemId: updatedTask.itemId,
-        itemName: updatedTask.itemName || updatedTask.itemId,
+        itemName: updatedTask.itemId,
         minThreshold: updatedTask.minThreshold,
         maxThreshold: updatedTask.maxThreshold,
         isActive: !!updatedTask.isActive,

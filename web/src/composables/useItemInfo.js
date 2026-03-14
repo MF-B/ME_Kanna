@@ -1,4 +1,4 @@
-import { reactive, shallowReactive } from 'vue'
+import { reactive } from 'vue'
 
 const itemInfoCache = new Map()
 const pending = new Map()
@@ -11,7 +11,7 @@ function getApiBase() {
   return `${protocol}//${host}:8080`
 }
 
-export function useItemNames() {
+export function useItemInfo() {
   const toAbsoluteIconUrl = (icon) => {
     if (!icon) return ''
     if (/^https?:\/\//i.test(icon)) return icon
@@ -37,7 +37,7 @@ export function useItemNames() {
 
   const fetchItemInfo = async (id) => {
     if (!id || itemInfoCache.has(id) || pending.has(id)) return
-    
+
     const url = `${getApiBase()}/api/item/${encodeURIComponent(id)}`
     const promise = fetch(url)
       .then((res) => {
@@ -63,7 +63,7 @@ export function useItemNames() {
 
   const ensureItemInfo = (id) => {
     if (!id) return
-    
+
     // 如果 cache 里有，且响应式对象已经同步，则不再触发多余更新
     if (itemInfoCache.has(id)) {
       const cached = itemInfoCache.get(id)
@@ -75,7 +75,7 @@ export function useItemNames() {
       }
       return
     }
-    
+
     // 异步拉取
     fetchItemInfo(id)
   }

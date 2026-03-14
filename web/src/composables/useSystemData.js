@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { useItemNames } from './useItemNames'
+import { useItemInfo } from './useItemInfo'
 
 export function useSystemData() {
   const factories = ref([])
@@ -43,7 +43,7 @@ export function useSystemData() {
     inventory: {}
   })
 
-  const { names: itemNameMap, ensureName } = useItemNames()
+  const { names: itemNameMap, ensureName } = useItemInfo()
 
   const defaultMinThreshold = 64
   const defaultMaxThreshold = 256

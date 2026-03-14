@@ -4,7 +4,7 @@
       <ItemIcon :item-id="node.itemId" />
       <div class="node-meta">
         <div class="node-title">
-          <span>{{ node.itemName || node.itemId }}</span>
+          <span>{{ getItemName(node.itemId) }}</span>
           <span v-if="node.count && node.count > 1" class="node-count">x{{ node.count }}</span>
         </div>
         <div class="node-sub">
@@ -34,6 +34,7 @@
 import { computed } from 'vue'
 import ItemIcon from './ItemIcon.vue'
 import { useI18n } from '../composables/useI18n'
+import { useItemInfo } from '../composables/useItemInfo'
 
 defineOptions({ name: 'AutoCraftTree' })
 
@@ -44,6 +45,13 @@ const props = defineProps({
 })
 
 const { t } = useI18n()
+const { names: itemNames, ensureName } = useItemInfo()
+
+function getItemName(itemId) {
+  if (!itemId) return ''
+  ensureName(itemId)
+  return itemNames[itemId] || itemId
+}
 
 const currentCount = computed(() => {
   return props.inventoryIndex[props.node.itemId] || 0

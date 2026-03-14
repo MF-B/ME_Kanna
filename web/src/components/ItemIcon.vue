@@ -19,7 +19,7 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { useItemNames } from '../composables/useItemNames'
+import { useItemInfo } from '../composables/useItemInfo'
 
 const props = defineProps({
   itemId: { type: String, required: false },
@@ -27,7 +27,7 @@ const props = defineProps({
 })
 
 const isError = ref(false)
-const { icons: itemIcons, ensureIcon } = useItemNames()
+const { icons: itemIcons, ensureIcon } = useItemInfo()
 
 watch(() => props.itemId, (nextId) => {
   isError.value = false

@@ -71,7 +71,7 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import ItemIcon from './ItemIcon.vue'
-import { useItemNames } from '../composables/useItemNames'
+import { useItemInfo } from '../composables/useItemInfo'
 import { useI18n } from '../composables/useI18n'
 
 const props = defineProps(['factory'])
@@ -86,7 +86,7 @@ const dialogVisible = ref(false)
 
 const localName = ref(props.factory?.name || '')
 const nameEditing = ref(false)
-const { names: itemNames } = useItemNames()
+const { names: itemNames } = useItemInfo()
 
 watch(() => props.factory.isActive, (newVal) => {
   localActive.value = newVal

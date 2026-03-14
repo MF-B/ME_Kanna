@@ -42,7 +42,7 @@
     >
        <template #header>
          <div class="b-dialog-header centered-header">
-           {{ detailTask ? displayItemName(detailTask.itemId, detailTask.itemName) : t('CRAFT.TASK_DETAILS') }}
+           {{ detailTask ? displayItemName(detailTask.itemId) : t('CRAFT.TASK_DETAILS') }}
          </div>
        </template>
        
