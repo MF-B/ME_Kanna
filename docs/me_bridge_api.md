@@ -148,17 +148,13 @@
 - `getAvailableChemicalStorage() -> number`
 
 ## 合成相关函数
-合成状态事件：
-- RS Bridge: `rs_crafting`
-- ME Bridge: `me_crafting`
-
 事件字段：
 - `error: boolean` 计算或合成是否失败
 - `id: int` 合成任务 id
 - `debug_message: string` 任务状态描述
 
 ```lua
-local event, error, id, message = os.pullEvent("rs_crafting")
+local event, error, id, message = os.pullEvent("ae_crafting")
 print("A crafting update occurred for Job #" .. id)
 if error then
       print("There was an error while calculating or crafting the resource with the message " .. message)
