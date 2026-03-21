@@ -1,7 +1,5 @@
-mods/
-job/
 .github/
 .minecraft/
 .vscode/
 .cursor/
-.agent/
+.antigravity/
