@@ -206,3 +206,17 @@ func (p *ConnPool) BroadcastToFrontend(v interface{}) {
 		_ = client.WriteJSON(v)
 	}
 }
+
+// BroadcastToCollectors 向所有采集端广播消息
+func (p *ConnPool) BroadcastToCollectors(v interface{}) {
+	p.mu.RLock()
+	conns := make([]*SafeConn, 0, len(p.CollectorConns))
+	for _, conn := range p.CollectorConns {
+		conns = append(conns, conn)
+	}
+	p.mu.RUnlock()
+
+	for _, conn := range conns {
+		_ = conn.WriteJSON(v)
+	}
+}

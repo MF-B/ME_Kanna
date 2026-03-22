@@ -7,26 +7,17 @@ import (
 // RegisterRoutes 统一注册所有外部接口
 func RegisterRoutes(r *gin.Engine) {
 	// 1. WebSocket 长连接
-	r.GET("/ws/minecraft", HandleMinecraft)
-	r.GET("/ws/web", HandleWeb)
+	r.GET("/ws/collector", HandleCollector)
+	r.GET("/ws/frontend", HandleFrontend)
 
-	// 2. 咱们的全新聚合接口！（干掉旧的 icon 和 item-name）
-	r.GET("/api/item/:id", HandleItemInfo)
+	// 2. HTTP API
+	r.GET("/api/itemInfo/:itemId", HandleItemInfo)
+	r.GET("/api/autocraft/tasks", HandleListAutoCraftTasks)
+	r.POST("/api/autocraft/tasks", HandleCreateAutoCraftTask)
+	r.DELETE("/api/autocraft/tasks/:itemId", HandleDeleteAutoCraftTask)
+	r.PATCH("/api/autocraft/tasks/:itemId", HandlePatchAutoCraftTask)
 
-	// 3. 其他业务接口
-	r.GET("/config/whitelist", HandleConfig)
-	r.POST("/config/whitelist", HandleConfigUpdate)
-	r.PUT("/config/whitelist", HandleConfigUpdate)
-	r.GET("/autocraft/craftables", HandleAutoCraftables)
-	r.GET("/autocraft/recipe", HandleAutoCraftRecipe)
-	r.GET("/autocraft/patterns", HandlePatterns)
-	r.GET("/autocraft/tasks", HandleAutoCraftTasks)
-	r.POST("/autocraft/tasks", HandleAutoCraftTasks)
-	r.DELETE("/autocraft/tasks/:itemId", HandleAutoCraftTaskDelete)
-	r.PATCH("/autocraft/tasks/:itemId", HandleAutoCraftTaskPatch)
-
-	// 4. 静态资源挂载
-	r.Static("/lua", "./lua_scripts")
-
-	r.Static("/icons", "./.minecraft/icon-exports-x32")
+	// 3. 静态资源挂载
+	r.Static("/lua", "../collector")
+	r.Static("/icons", "../.minecraft/icon-exports-x32")
 }

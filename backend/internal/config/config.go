@@ -50,6 +50,11 @@ func VanillaTexturesRoot() string {
 	return filepath.Join(VanillaAssetsPath(), "assets", "minecraft", "textures")
 }
 
+// OptionsFilePath Minecraft 选项文件 (用于读取资源包顺序)
+func OptionsFilePath() string {
+	return filepath.Join(MinecraftDir(), "options.txt")
+}
+
 // VanillaLangCandidates 语言文件候选列表
 func VanillaLangCandidates() []string {
 	base := filepath.Join(VanillaAssetsPath(), "assets", "minecraft", "lang")

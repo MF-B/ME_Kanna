@@ -1,8 +1,7 @@
 package main
 
 import (
-	"ME_Kanna/internal/api" // 引入 api 包
-	"ME_Kanna/internal/service"
+	"ME_Kanna/internal/api"
 	"ME_Kanna/internal/utils"
 	"log"
 
@@ -11,6 +10,8 @@ import (
 
 func main() {
 	r := gin.Default()
+
+	// CORS 中间件
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
@@ -22,15 +23,14 @@ func main() {
 		c.Next()
 	})
 
-	if err := service.InitWhitelist(); err != nil {
-		log.Printf("Whitelist init failed: %v", err)
-	}
+	// 初始化图标索引
+	utils.InitIconIndex("../.minecraft/icon-exports-x32")
 
+	// 注册路由
 	api.RegisterRoutes(r)
-	utils.InitIconIndex("./.minecraft/icon-exports-x32")
 
 	port := ":8080"
-	log.Printf("MineDock 启动, 监听: [::]%s", port)
+	log.Printf("ME_Kanna 启动, 监听: [::]%s", port)
 
 	if err := r.Run("[::]" + port); err != nil {
 		log.Fatalf("启动失败: %v", err)
