@@ -1,138 +1,103 @@
 package model
 
-import (
-	"encoding/json"
+// ========================
+// 物品
+// ========================
+
+// ItemInfo 物品静态信息 (字典, 缓存在内存中, 按需懒加载)
+type ItemInfo struct {
+	ItemId string `json:"itemId"`
+	Name   string `json:"name"`
+	Icon   string `json:"icon"`
+}
+
+// ItemState 物品动态信息 (随每次 evt_tick 更新)
+type ItemState struct {
+	Count int64 `json:"count"`
+}
+
+// ========================
+// CPU & 合成任务
+// ========================
+
+// CraftingJob CPU 上的合成任务 (来自 AE2 原始数据)
+type CraftingJob struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
+// CPUState CPU 状态 (来自 AE2 原始数据)
+type CPUState struct {
+	Storage      int          `json:"storage"`
+	CoProcessors int          `json:"coProcessors"`
+	Job          *CraftingJob `json:"job"` // nil = 空闲
+}
+
+// JobInfo 平台下发的合成任务追踪
+type JobInfo struct {
+	JobID  int    `json:"jobId"`
+	ItemId string `json:"itemId"`
+	Count  int    `json:"count"`
+	Status string `json:"status"` // pending, crafting, error
+}
+
+// Job 状态常量
+const (
+	JobStatusPending  = "pending"
+	JobStatusCrafting = "crafting"
+	JobStatusError    = "error"
 )
 
-type ItemInfo struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Icon string `json:"icon"`
-}
+// ========================
+// 能源 & 存储
+// ========================
 
+// EnergyStats 能源统计
 type EnergyStats struct {
-	EnergyStored       float64 `json:"energyStored"`
-	EnergyMax          float64 `json:"energyMax"`
-	EnergyUsage        float64 `json:"energyUsage"`
-	AverageEnergyInput float64 `json:"averageEnergyInput"`
-	NetEnergyRate      float64 `json:"netEnergyRate"`
+	Stored   float64 `json:"stored"`
+	Capacity float64 `json:"capacity"`
+	Usage    float64 `json:"usage"`
+	Input    float64 `json:"input"`
 }
 
+// StorageStats 存储统计
 type StorageStats struct {
-	// 物品存储 (ME Drives)
-	ItemTotal int64 `json:"itemTotal"`
-	ItemUsed  int64 `json:"itemUsed"`
-	// 计算字段：剩余空间 (Total - Used)
-	ItemAvailable int64 `json:"itemAvailable,omitempty"`
-
-	// 外部物品存储 (Storage Bus)
-	ItemExternalTotal int64 `json:"itemExternalTotal"`
-	ItemExternalUsed  int64 `json:"itemExternalUsed"`
-	// 计算字段
-	ItemExternalAvailable int64 `json:"itemExternalAvailable,omitempty"`
-
-	// 流体存储
+	ItemTotal  int64 `json:"itemTotal"`
+	ItemUsed   int64 `json:"itemUsed"`
 	FluidTotal int64 `json:"fluidTotal"`
 	FluidUsed  int64 `json:"fluidUsed"`
-	// 计算字段
-	FluidAvailable int64 `json:"fluidAvailable,omitempty"`
 }
 
-// SystemStats 存储系统运行时的状态（高频变动）
-type SystemStats struct {
-	LastUpdated int64            `json:"lastUpdated"`
-	EnergyStats EnergyStats      `json:"energyStats"`
-	Storage     StorageStats     `json:"storage"`
-	Inventory   map[string]int64 `json:"inventory,omitempty"`
+// ========================
+// 工厂产能
+// ========================
+
+// FactoryState 工厂产能状态
+type FactoryState struct {
+	FactoryId   string             `json:"factoryId"`
+	FactoryName string             `json:"factoryName"`
+	Items       map[string]float64 `json:"items"` // itemId -> 生产速率 (个/分钟)
+	IsActive    bool               `json:"isActive"`
+	LastUpdated int64              `json:"lastUpdated"`
 }
 
-// LuaReport 对应 AE2 发上来的库存快照
-type LuaReport struct {
-	RawItems map[string]int64 `json:"items"`
-	IsActive bool             `json:"active"`
-	Name     string           `json:"name"`
-	Energy   *EnergyStats     `json:"energy,omitempty"`
-	Storage  *StorageStats    `json:"storage,omitempty"`
+// ========================
+// 自动合成
+// ========================
+
+// AutoCraftRule 自动合成规则 (用户配置)
+type AutoCraftRule struct {
+	ItemId       string `json:"itemId"`
+	MinThreshold int64  `json:"minThreshold"` // 低于此值触发合成
+	MaxThreshold int64  `json:"maxThreshold"` // 合成到此数量
+	IsActive     bool   `json:"isActive"`
 }
 
-// FactoryData 发给 Vue 前端的最终数据
-type FactoryData struct {
-	ID          string                  `json:"id"`
-	Name        string                  `json:"name"`
-	NameLocked  bool                    `json:"nameLocked"`
-	ItemID      string                  `json:"itemId"`      // 卡片图标(兼容旧字段)
-	PrimaryItem string                  `json:"primaryItem"` // 主显示物品
-	Items       map[string]*FactoryItem `json:"items"`
-	IsActive    bool                    `json:"isActive"`
-	LastUpdated int64                   `json:"lastUpdated"`
-}
-
-type FactoryItem struct {
-	ItemID   string  `json:"itemId"`
-	Count    int64   `json:"count"`
-	ProdRate float64 `json:"prodRate"`
-	Visible  bool    `json:"visible"`
-	Order    int     `json:"order"`
-}
-
-type FactoryItemSetting struct {
-	ItemID  string `json:"itemId"`
-	Visible bool   `json:"visible"`
-	Order   int    `json:"order"`
-}
-
-type RecipeSnapshot struct {
-	ItemID   string            `json:"itemId"`
-	ItemName string            `json:"itemName"`
-	Count    int64             `json:"count"`
-	Children []*RecipeSnapshot `json:"children,omitempty"`
-}
-
-type AutoCraftTask struct {
-	ItemID         string          `json:"itemId"`
-	ItemName       string          `json:"itemName"`
-	MinThreshold   int64           `json:"minThreshold"`
-	MaxThreshold   int64           `json:"maxThreshold"`
-	IsActive       bool            `json:"isActive"`
-	RecipeSnapshot *RecipeSnapshot `json:"recipeSnapshot,omitempty"`
-}
-
-type CraftableItem struct {
-	ItemID      string `json:"itemId"`
-	ItemName    string `json:"itemName"`
-	Fingerprint string `json:"fingerprint,omitempty"`
-	Count       int64  `json:"count,omitempty"`
-}
-
-// IncomingMessage 统一接收 Lua 消息
-type IncomingMessage struct {
-	Type             string          `json:"type"`
-	Data             LuaReport       `json:"data"`
-	ID               string          `json:"id"`
-	RequestID        string          `json:"requestId"`
-	Name             string          `json:"name"`
-	Delta            int64           `json:"delta"`
-	ItemID           string          `json:"itemId"`
-	Count            int64           `json:"count"`
-	Craftables       []CraftableItem `json:"craftables"`
-	Patterns         json.RawMessage `json:"patterns"`
-	WhitelistVersion json.RawMessage `json:"whitelist_version"`
-	// craft_result 字段
-	Success bool   `json:"success"`
-	TaskID  string `json:"taskId"`
-	Error   string `json:"error"`
-	Message string `json:"message"`
-}
-
-// Command 控制指令
-type Command struct {
-	Target      string               `json:"target"`
-	Action      string               `json:"action"`
-	Type        string               `json:"type,omitempty"`
-	RequestID   string               `json:"requestId,omitempty"`
-	ItemID      string               `json:"itemId,omitempty"`
-	Count       int64                `json:"count,omitempty"`
-	Name        string               `json:"name,omitempty"`
-	PrimaryItem string               `json:"primaryItem,omitempty"`
-	Items       []FactoryItemSetting `json:"items,omitempty"`
-}
+// CraftingStatus 指示灯五态
+const (
+	CraftingStatusDisabled = "disabled" // 规则存在但未启用
+	CraftingStatusIdle     = "idle"     // 补货已开启，库存充足
+	CraftingStatusPending  = "pending"  // 需要补货，等待合成
+	CraftingStatusCrafting = "crafting" // AE2 正在合成
+	CraftingStatusError    = "error"    // 合成失败
+)

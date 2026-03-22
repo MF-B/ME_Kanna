@@ -8,6 +8,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// ========================
+// WebSocket 连接管理
+// ========================
+
 // SafeConn 包装 WebSocket 连接，提供并发安全的写操作
 type SafeConn struct {
 	Conn *websocket.Conn
@@ -21,11 +25,6 @@ func (sc *SafeConn) WriteJSON(v interface{}) error {
 	return sc.Conn.WriteJSON(v)
 }
 
-// SetWriteDeadline 线程安全的写超时设置
-func (sc *SafeConn) SetWriteDeadline(t interface{}) {
-	// 由调用方在 WriteJSON 前后自行管理
-}
-
 // Close 关闭底层连接
 func (sc *SafeConn) Close() error {
 	return sc.Conn.Close()
@@ -36,80 +35,174 @@ func WrapConn(conn *websocket.Conn) *SafeConn {
 	return &SafeConn{Conn: conn}
 }
 
-// SystemMeta 保持不变，用于存角色
-type SystemMeta struct {
-	DeviceRoles map[string]string
+// ConnPool 管理所有 WebSocket 连接
+type ConnPool struct {
+	mu              sync.RWMutex
+	CollectorConns  map[string]*SafeConn // deviceId -> conn
+	FrontendClients map[*SafeConn]bool   // 前端连接集合
 }
 
-// StateManager
-type StateManager struct {
-	Mutex sync.RWMutex
+// ========================
+// AE2Network 聚合根
+// ========================
 
-	// 连接池
-	DeviceConns map[string]*SafeConn
-	WebClients  map[*SafeConn]bool
+// AE2Network 系统核心状态, 所有采集数据的内存缓存
+type AE2Network struct {
+	mu sync.RWMutex
 
-	// 工厂生产数据 (流速)
-	Factories map[string]*model.FactoryData
+	// 监控名单
+	PriorityWatchlist map[string]bool // 前端视口 + 活跃任务, 全量高频查
+	RoutineWatchlist  []string        // 补货名单, Lua 分片轮转查
 
-	Networks map[string]*model.SystemStats
+	// 物品
+	Registry  map[string]model.ItemInfo  // 静态字典 (懒加载)
+	Inventory map[string]model.ItemState // 动态库存
 
-	// 元数据
-	Meta SystemMeta
+	// CPU & 合成
+	CPUs       []model.CPUState       // AE2 CPU 状态快照
+	ActiveJobs map[int]*model.JobInfo // 平台活跃任务
 
-	// 全局物品字典(静态)
-	ItemDict map[string]model.ItemInfo
+	// 系统状态
+	Energy  model.EnergyStats
+	Storage model.StorageStats
+
+	// 工厂
+	Factories map[string]*model.FactoryState
+
+	// 自动合成规则
+	AutoCraftRules map[string]*model.AutoCraftRule
 }
 
-// Global 初始化
-var Global = &StateManager{
-	Factories:   make(map[string]*model.FactoryData),
-	DeviceConns: make(map[string]*SafeConn),
-	WebClients:  make(map[*SafeConn]bool),
+// ========================
+// 全局实例
+// ========================
 
-	Networks: make(map[string]*model.SystemStats),
-
-	Meta: SystemMeta{
-		DeviceRoles: make(map[string]string),
-	},
-	ItemDict: make(map[string]model.ItemInfo),
+// Global 全局连接池
+var Pool = &ConnPool{
+	CollectorConns:  make(map[string]*SafeConn),
+	FrontendClients: make(map[*SafeConn]bool),
 }
 
-// GetItemInfo 获取物品信息
-func (s *StateManager) GetItemInfo(itemID string) model.ItemInfo {
-	// 读锁
-	s.Mutex.RLock()
-	info, exists := s.ItemDict[itemID]
-	s.Mutex.RUnlock()
+// Network 全局 AE2 网络状态
+var Network = &AE2Network{
+	PriorityWatchlist: make(map[string]bool),
+	RoutineWatchlist:  make([]string, 0),
+	Registry:          make(map[string]model.ItemInfo),
+	Inventory:         make(map[string]model.ItemState),
+	CPUs:              make([]model.CPUState, 0),
+	ActiveJobs:        make(map[int]*model.JobInfo),
+	Factories:         make(map[string]*model.FactoryState),
+	AutoCraftRules:    make(map[string]*model.AutoCraftRule),
+}
 
-	// 命中缓存
+// ========================
+// AE2Network 方法
+// ========================
+
+// RLock 获取读锁
+func (n *AE2Network) RLock() { n.mu.RLock() }
+
+// RUnlock 释放读锁
+func (n *AE2Network) RUnlock() { n.mu.RUnlock() }
+
+// Lock 获取写锁
+func (n *AE2Network) Lock() { n.mu.Lock() }
+
+// Unlock 释放写锁
+func (n *AE2Network) Unlock() { n.mu.Unlock() }
+
+// GetItemInfo 获取物品静态信息, 未缓存时自动解析并写入 Registry
+func (n *AE2Network) GetItemInfo(itemId string) model.ItemInfo {
+	n.mu.RLock()
+	info, exists := n.Registry[itemId]
+	n.mu.RUnlock()
+
 	if exists {
 		return info
 	}
 
-	// 写锁
-	s.Mutex.Lock()
-	defer s.Mutex.Unlock()
+	// 写锁 + 双重检查
+	n.mu.Lock()
+	defer n.mu.Unlock()
 
-	// 二次验证
-	if info, exists = s.ItemDict[itemID]; exists {
+	if info, exists = n.Registry[itemId]; exists {
 		return info
 	}
 
-	// 获取Name和Icon
-	name, err := utils.GetItemDisplayName(itemID)
+	name, err := utils.GetItemDisplayName(itemId)
 	if err != nil {
-		name = itemID
+		name = itemId
 	}
-	icon := utils.GetIconURL(itemID)
+	icon := utils.GetIconURL(itemId)
 
 	newItem := model.ItemInfo{
-		ID:   itemID,
-		Name: name,
-		Icon: icon,
+		ItemId: itemId,
+		Name:   name,
+		Icon:   icon,
 	}
-
-	s.ItemDict[itemID] = newItem
-
+	n.Registry[itemId] = newItem
 	return newItem
+}
+
+// ========================
+// ConnPool 方法
+// ========================
+
+// AddCollector 注册采集端连接
+func (p *ConnPool) AddCollector(deviceId string, conn *SafeConn) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.CollectorConns[deviceId] = conn
+}
+
+// RemoveCollector 移除采集端连接
+func (p *ConnPool) RemoveCollector(deviceId string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	delete(p.CollectorConns, deviceId)
+}
+
+// GetCollector 获取指定采集端连接
+func (p *ConnPool) GetCollector(deviceId string) *SafeConn {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.CollectorConns[deviceId]
+}
+
+// GetAnyCollector 获取任意一个采集端连接 (用于下发指令)
+func (p *ConnPool) GetAnyCollector() *SafeConn {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	for _, conn := range p.CollectorConns {
+		return conn
+	}
+	return nil
+}
+
+// AddFrontend 注册前端连接
+func (p *ConnPool) AddFrontend(conn *SafeConn) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.FrontendClients[conn] = true
+}
+
+// RemoveFrontend 移除前端连接
+func (p *ConnPool) RemoveFrontend(conn *SafeConn) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	delete(p.FrontendClients, conn)
+}
+
+// BroadcastToFrontend 向所有前端客户端广播消息
+func (p *ConnPool) BroadcastToFrontend(v interface{}) {
+	p.mu.RLock()
+	clients := make([]*SafeConn, 0, len(p.FrontendClients))
+	for client := range p.FrontendClients {
+		clients = append(clients, client)
+	}
+	p.mu.RUnlock()
+
+	for _, client := range clients {
+		_ = client.WriteJSON(v)
+	}
 }
