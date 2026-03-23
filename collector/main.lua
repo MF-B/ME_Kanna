@@ -2,7 +2,6 @@ package.path = "lib/?.lua;" .. package.path
 
 local config     = require("config")
 local wsClient   = require("ws_client")
-local whitelist  = require("whitelist")
 local aeBridge   = require("ae_bridge")
 local packets    = require("packets")
 local util       = require("util")
@@ -16,21 +15,12 @@ local function sendLoop(ws)
 
         if ae_device then
             local ok, err = pcall(function()
-                -- 1. 采集数据 (全都在 aeBridge 里封装好了)
-                local filteredItems = aeBridge.collectFilteredItems(ae_device, whitelist.getList())
+                local items = aeBridge.collectItems(ae_device)
+                local cpus = aeBridge.collectCPUs(ae_device)
                 local energy = aeBridge.collectEnergy(ae_device)
                 local storage = aeBridge.collectStorage(ae_device)
-                
-                -- 2. 打包发送 (whitelist.getVersion() 放在这里)
-                local payload = packets.inventoryUpdate(
-                    config.DEVICE_ID,
-                    "Main Storage",
-                    true,
-                    filteredItems,
-                    energy,
-                    storage,
-                    whitelist.getVersion()
-                )
+
+                local payload = packets.evtTick(items, cpus, energy, storage)
                 util.sendJson(ws, payload)
             end)
 
@@ -38,12 +28,9 @@ local function sendLoop(ws)
                 print("Send error: " .. tostring(err))
                 ae_device = nil -- bridge 可能已断开，下次重新扫描
             end
-            
-            -- 3. 检查同步 (放在发送之后，避免 HTTP 卡顿影响数据上报)
-            whitelist.sync(config.API_URL, config.SYNC_INTERVAL)
         end
 
-        sleep(0.5)
+        sleep(1)
     end
 end
 
@@ -62,8 +49,10 @@ local function receiveLoop(ws)
     while true do
         local msg = ws.receive(30) -- 30秒超时，防止半开连接永久阻塞
         if msg then
-            local packet = textutils.unserializeJSON(msg)
-            cmdHandler.dispatch(packet, ctx)
+            local ok, packet = pcall(textutils.unserializeJSON, msg)
+            if ok and type(packet) == "table" then
+                cmdHandler.dispatch(packet, ctx)
+            end
         else
             -- receive 返回 nil: 超时或断开
             -- 发送心跳探测连接是否存活
@@ -80,19 +69,17 @@ end
 
 local function craftEventLoop(ws)
     while true do
-        local _, isError, taskId, message = os.pullEvent("me_crafting")
+        local _, isError, taskId, message = os.pullEvent("ae_crafting")
         print("[CraftEvent] id=" .. tostring(taskId) .. " err=" .. tostring(isError) .. " msg=" .. tostring(message))
         pcall(function()
-            util.sendJson(ws, packets.craftStatus(config.DEVICE_ID, taskId, isError, message))
+            util.sendJson(ws, packets.evtCrafting(taskId, isError, message))
         end)
     end
 end
 
 local function runSession(ws)
-    -- 启动时强制同步一次
-    whitelist.sync(config.API_URL, config.SYNC_INTERVAL, true)
-    
     print("System Online.")
+
     parallel.waitForAny(
         function() sendLoop(ws) end,
         function() receiveLoop(ws) end,

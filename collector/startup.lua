@@ -6,7 +6,6 @@ local FILES = {
     "lib/config.lua",
     "lib/util.lua",
     "lib/ws_client.lua",
-    "lib/whitelist.lua",
     "lib/ae_bridge.lua",
     "lib/packets.lua",
     "lib/cmd_handler.lua",

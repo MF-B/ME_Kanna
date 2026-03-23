@@ -18,11 +18,13 @@ const (
 	MsgEvtTick       = "evt_tick"
 	MsgEvtCrafting   = "evt_crafting"
 	MsgEvtProduction = "evt_production"
+	MsgEvtCraftables = "evt_craftables"
 
 	// 后端 → 采集端 (下发指令)
-	MsgCmdCraftItem   = "cmd_craft_item"
-	MsgCmdSetPriority = "cmd_set_priority"
-	MsgCmdSetRoutine  = "cmd_set_routine"
+	MsgCmdCraftItem     = "cmd_craft_item"
+	MsgCmdSetPriority   = "cmd_set_priority"
+	MsgCmdSetRoutine    = "cmd_set_routine"
+	MsgCmdScanCraftables = "cmd_scan_craftables"
 
 	// 后端 → 前端 (聚合推送)
 	MsgEvtSync = "evt_sync"
@@ -67,6 +69,17 @@ type ProductionData struct {
 	FactoryName string `json:"factoryName"`
 	ItemId      string `json:"itemId"`
 	Delta       int64  `json:"delta"`
+}
+
+// CraftableItem 代表可合成物品的信息
+type CraftableItem struct {
+	Name  string `json:"name"`
+	Count int64  `json:"count"`
+}
+
+// CraftablesData evt_craftables 的 data 字段
+type CraftablesData struct {
+	Items []CraftableItem `json:"items"`
 }
 
 // ========================

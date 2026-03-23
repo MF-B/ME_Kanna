@@ -44,6 +44,14 @@ func HandleCollector(c *gin.Context) {
 	// 推送当前名单
 	service.PushWatchlistsToCollector(ws)
 
+	// 要求采集端上报初始的可合成列表
+	scanCmd := model.Envelope{
+		Type: model.MsgCmdScanCraftables,
+		Data: []byte("{}"),
+	}
+	_ = ws.WriteJSON(scanCmd)
+	log.Printf("[Collector] sent initial scan command")
+
 	// 读取消息循环
 	for {
 		_, raw, err := conn.ReadMessage()
@@ -88,6 +96,14 @@ func handleCollectorMessage(env *model.Envelope) {
 			return
 		}
 		service.ProcessProduction(&data)
+
+	case model.MsgEvtCraftables:
+		var data model.CraftablesData
+		if err := json.Unmarshal(env.Data, &data); err != nil {
+			log.Printf("[Collector] evt_craftables parse error: %v", err)
+			return
+		}
+		service.ProcessCraftables(&data)
 
 	default:
 		log.Printf("[Collector] unknown type: %s", env.Type)
@@ -140,6 +156,18 @@ func HandleItemInfo(c *gin.Context) {
 
 	info := store.Network.GetItemInfo(itemId)
 	c.JSON(http.StatusOK, info)
+}
+
+// HandleGetCraftables 获取全网可合成物品列表
+func HandleGetCraftables(c *gin.Context) {
+	items := service.GetCraftables()
+	c.JSON(http.StatusOK, gin.H{"items": items})
+}
+
+// HandleTriggerCraftablesScan 触发手动扫描全网可合成物品
+func HandleTriggerCraftablesScan(c *gin.Context) {
+	service.TriggerCraftablesScan()
+	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
 // HandleListAutoCraftTasks 列出所有自动合成规则

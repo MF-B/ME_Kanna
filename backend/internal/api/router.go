@@ -17,6 +17,9 @@ func RegisterRoutes(r *gin.Engine) {
 	r.DELETE("/api/autocraft/tasks/:itemId", HandleDeleteAutoCraftTask)
 	r.PATCH("/api/autocraft/tasks/:itemId", HandlePatchAutoCraftTask)
 
+	r.GET("/api/craftables", HandleGetCraftables)
+	r.POST("/api/craftables/scan", HandleTriggerCraftablesScan)
+
 	// 3. 静态资源挂载
 	r.Static("/lua", "../collector")
 	r.Static("/icons", "../.minecraft/icon-exports-x32")

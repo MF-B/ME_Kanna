@@ -71,6 +71,9 @@ type AE2Network struct {
 
 	// 自动合成规则
 	AutoCraftRules map[string]*model.AutoCraftRule
+
+	// 可合成物品字典 (按需扫描获取)
+	Craftables map[string]int64
 }
 
 // ========================
@@ -93,6 +96,7 @@ var Network = &AE2Network{
 	ActiveJobs:        make(map[int]*model.JobInfo),
 	Factories:         make(map[string]*model.FactoryState),
 	AutoCraftRules:    make(map[string]*model.AutoCraftRule),
+	Craftables:        make(map[string]int64),
 }
 
 // ========================
